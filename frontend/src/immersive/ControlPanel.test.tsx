@@ -107,12 +107,13 @@ it('keeps built-in models selectable without a Python environment', async () => 
   expect(screen.getByRole('radio', { name: '为四人局指定 内置四人模型' })).toBeTruthy()
 })
 
-it('distinguishes the running model from a selection for the next game', async () => {
+it('keeps selection independent of the running model without adding runtime captions', async () => {
   useBotStore.setState({ status: { state: 'ready', bot: 'mortal', actor_id: 0 } })
   useGameStore.setState({ game: game() })
   mount()
   fireEvent.click(screen.getByRole('link', { name: '模型' }))
-  expect(await screen.findByText('本局正在使用：Mortal')).toBeTruthy()
+  await screen.findByRole('radio', { name: '为四人局指定 Mortal' })
+  expect(screen.queryByText(/本局正在使用/)).toBeNull()
   const fourPlayer = screen.getByRole('region', { name: '四人局模型' })
   expect(within(fourPlayer).getByRole('radio', { name: '为四人局指定 内置四人模型' }).getAttribute('aria-checked')).toBe('true')
   fireEvent.click(screen.getByRole('radio', { name: '为四人局指定 Mortal' }))
@@ -120,7 +121,7 @@ it('distinguishes the running model from a selection for the next game', async (
   expect(screen.queryByText('下场使用')).toBeNull()
   fireEvent.click(screen.getByRole('radio', { name: '为四人局指定 内置四人模型' }))
   await waitFor(() => expect(within(fourPlayer).getByRole('radio', { name: '为四人局指定 内置四人模型' }).getAttribute('aria-checked')).toBe('true'))
-  expect(screen.getByText('本局正在使用：Mortal')).toBeTruthy()
+  expect(screen.queryByText(/本局正在使用/)).toBeNull()
 })
 
 it('does not present a stopped runner as the model currently playing', async () => {
@@ -132,12 +133,13 @@ it('does not present a stopped runner as the model currently playing', async () 
   expect(screen.queryByText('已选用')).toBeNull()
 })
 
-it.each([null, { ...game(), is_done: true }])('uses runner status while the game snapshot is still catching up (case %#)', async snapshot => {
+it.each([null, { ...game(), is_done: true }])('omits runtime captions while the game snapshot is still catching up (case %#)', async snapshot => {
   useBotStore.setState({ status: { state: 'ready', bot: 'mortal', actor_id: 0 } })
   useGameStore.setState({ game: snapshot })
   mount()
   fireEvent.click(screen.getByRole('link', { name: '模型' }))
-  expect(await screen.findByText('本局正在使用：Mortal')).toBeTruthy()
+  await screen.findByRole('radio', { name: '为四人局指定 Mortal' })
+  expect(screen.queryByText(/本局正在使用/)).toBeNull()
   expect(screen.queryByText('当前没有运行中的模型')).toBeNull()
 })
 

@@ -3,10 +3,8 @@ import { invoke } from '@/lib/tauri'
 import { NATIVE_3P, NATIVE_4P, isNativeBot } from '@/lib/nativeBots'
 import { useBotStore } from '@/stores/botStore'
 import { useConfigStore } from '@/stores/configStore'
-import { useGameStore } from '@/stores/gameStore'
 import { useUiPrefsStore } from '@/stores/uiPrefsStore'
 import type { AppConfig, BotInfo } from '@/types'
-import type { ImmersiveFrame } from './types'
 import { ModelImport } from './ModelImport'
 import { MenuFooter } from './MenuFooter'
 import { useModelImportStore } from './modelImportStore'
@@ -41,13 +39,9 @@ function cardName(bot: BotInfo) {
   return name.match(/(?:^|\s)(S\d+|\d+k)\b/i)?.[1] ?? name
 }
 
-export function LocalModels({ frame }: { frame: ImmersiveFrame | null }) {
+export function LocalModels() {
   const cached = useBotStore(s => s.list)
   const setList = useBotStore(s => s.setList)
-  const cachedRuntime = useBotStore(s => s.status)
-  const cachedGame = useGameStore(s => s.game)
-  const runtime = frame?.bot_status ?? cachedRuntime
-  const game = frame?.game ?? cachedGame
   const config = useConfigStore(s => s.config)
   const setConfig = useConfigStore(s => s.setConfig)
   const busy = useModelImportStore(s => s.selecting)
@@ -59,18 +53,6 @@ export function LocalModels({ frame }: { frame: ImmersiveFrame | null }) {
   const installing = useModelImportStore(s => s.busy)
   const prepareEnvironment = useModelImportStore(s => s.prepareEnvironment)
   const models = cached.length ? cached : builtins
-  // Runner status is authoritative; the separately fetched game snapshot may
-  // still be null or describe the previous completed game during reconnection.
-  const runningName = runtime.state === 'ready' ? runtime.bot : null
-  const runningMode = runningName && game && !game.is_done ? (game.num_players === 3 ? '3p' : '4p') : null
-  const modelName = (name: string) => {
-    const bot = models.find(model => model.name === name)
-    return bot ? label(bot) : name
-  }
-  const runtimeText = runningName ? `本局正在使用：${modelName(runningName)}`
-    : runtime.state === 'loading' ? `正在加载：${modelName(runtime.bot)}`
-    : runtime.state === 'error' ? `模型异常：${modelName(runtime.bot)}`
-    : null
 
   useEffect(() => {
     let cancelled = false
@@ -120,10 +102,9 @@ export function LocalModels({ frame }: { frame: ImmersiveFrame | null }) {
           const active = activeName === bot.name
           const selected = selection.name === bot.name && selection.section === section
           const favorite = favorites.includes(bot.name)
-          const running = runningName === bot.name && runningMode === mode
           const botLabel = label(bot)
           const ready = isNativeBot(bot.name) || (bot.has_pyproject && bot.env_ready)
-          return <div key={bot.name} className="hud-model-choice" data-active={active} data-selected={selected} data-current={running}>
+          return <div key={bot.name} className="hud-model-choice" data-active={active} data-selected={selected}>
             <label className="hud-model-card" title={botLabel}>
               <input type="radio" name={`model-${mode}`} checked={selected} aria-checked={selected} readOnly disabled={!config || busy || installing || !ready} aria-label={`为${modeName}指定 ${botLabel}`} onClick={() => select(mode, bot.name, section)} />
               <img className="hud-model-glow" src="/maka/dorm/sushe_click_effect.png" alt="" />
@@ -141,7 +122,7 @@ export function LocalModels({ frame }: { frame: ImmersiveFrame | null }) {
       return <section key={mode} className="hud-local-model-group" aria-label={`${modeName}模型`}>
         <h3 className="hud-native-heading"><span>{mode === '4p' ? '四人东/南' : '三人东/南'}</span></h3>
         <div className="hud-model-list" role="radiogroup" aria-label={`${modeName}模型选择`}>
-          <h4 className="hud-native-heading"><span>已收藏</span></h4>
+          <h4 className="hud-native-field-heading">已收藏</h4>
           <div className="hud-model-cards hud-model-favorites" role="group" aria-label="收藏模型">
             {starred.length ? starred.map(bot => renderCard(bot, 'favorites')) : <div className="hud-model-empty"><img src="/maka/character/noinfo.png" alt="" /><span>空空如也</span></div>}
           </div>
@@ -153,7 +134,7 @@ export function LocalModels({ frame }: { frame: ImmersiveFrame | null }) {
     })}</div>
     <MenuFooter>
       <button className="hud-local-button" data-native-press-scale aria-label="导入模型" aria-expanded={importOpen} onClick={() => setImportOpen(open => !open)}>导入</button>
-      <div>{runtimeText && <p className="hud-local-running" role="status">{runtimeText}</p>}{status && <p className="hud-local-status" role="status">{status}</p>}</div>
+      {status && <p className="hud-local-status" role="status">{status}</p>}
     </MenuFooter>
   </div>
 }
