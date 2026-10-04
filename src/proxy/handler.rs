@@ -37,6 +37,10 @@ use tracing::{debug, error, info, warn};
 const TAG_CLIENT_TO_SERVER: u8 = 0;
 const TAG_SERVER_TO_CLIENT: u8 = 1;
 
+#[cfg(test)]
+#[path = "handler_autoplay_tests.rs"]
+mod autoplay_tests;
+
 /// Shared, per-WS-upgrade bridge. Both directions of the same WebSocket
 /// connection (client→server and server→client) need the same `Bridge`
 /// instance because Majsoul's request/response correlation lives in the
@@ -94,6 +98,9 @@ pub struct ProxyHandler {
     /// bridge's `in_game` flag). `None` in "log only" mode / tests.
     /// See `autoplay::inject`.
     inject: Option<crate::autoplay::inject::SharedInjectBus>,
+    /// Steam uses native input, but still needs the same operation clock and
+    /// client-input acknowledgement counters as browser autoplay.
+    autoplay: Option<Arc<crate::autoplay::AutoplayContext>>,
 }
 
 impl ProxyHandler {
@@ -133,7 +140,13 @@ impl ProxyHandler {
             rewrite_cert_report,
             block_telemetry,
             inject,
+            autoplay: None,
         })
+    }
+
+    pub fn with_autoplay(mut self, autoplay: Option<Arc<crate::autoplay::AutoplayContext>>) -> Self {
+        self.autoplay = autoplay;
+        self
     }
 
     /// Tell the user, once, that their redirector is proxying loopback. The
@@ -409,12 +422,9 @@ impl ProxyHandler {
                             None
                         }
                     };
-                // No time-budget slot and no input watch: the MITM path
-                // has no `Page` handle, so click-based autoplay can never
-                // run here. The one slot the MITM path DOES wire is Riichi
-                // City's frame-injection gate — its autoplay transmits
-                // protocol frames rather than clicking a page.
                 let hooks = bridge::BridgeHooks {
+                    time_budget: self.autoplay.as_ref().map(|a| a.time_budget.clone()),
+                    input_watch: self.autoplay.as_ref().map(|a| a.input_watch.clone()),
                     riichi_inject: if self.platform == Platform::RiichiCity {
                         self.inject.clone()
                     } else {
@@ -956,6 +966,11 @@ impl WebSocketHandler for ProxyHandler {
             }
         }
 
+        // Either half closing makes a gameplay connection unusable. The listener
+        // may remain running, so the HUD must not use listener status as liveness.
+        if self.platform == Platform::Majsoul {
+            super::game_transport::close(client);
+        }
         self.release_bridge(client, bridge);
     }
 }
@@ -1043,6 +1058,17 @@ impl ProxyHandler {
         size: usize,
         result: &bridge::ParseResult,
     ) {
+        if self.platform == Platform::Majsoul
+            && result.events.iter().any(|e| {
+                matches!(
+                    e,
+                    crate::schema::MjaiEvent::StartGame { .. }
+                        | crate::schema::MjaiEvent::StartKyoku { .. }
+                )
+            })
+        {
+            super::game_transport::observe_game(client);
+        }
         let direction = match dir {
             Direction::Down => FrameDirection::Down,
             Direction::Up => FrameDirection::Up,

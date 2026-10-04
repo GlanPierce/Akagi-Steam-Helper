@@ -50,4 +50,22 @@ describe('uiPrefsStore AkagiMS promo card state', () => {
     expect(restarted.useUiPrefsStore.getState().dashboardOnboarded).toBe(true)
     expect(restarted.useUiPrefsStore.getState().akagimsCardDismissed).toBe(false)
   })
+
+  it('persists model favorites and their removal across restarts', async () => {
+    const { useUiPrefsStore } = await freshStore()
+    useUiPrefsStore.getState().toggleFavoriteModel('mortal-s42')
+    useUiPrefsStore.getState().toggleFavoriteModel('akagi-native3p')
+    const restarted = await freshStore()
+    expect(restarted.useUiPrefsStore.getState().favoriteModels).toEqual(['mortal-s42', 'akagi-native3p'])
+    restarted.useUiPrefsStore.getState().toggleFavoriteModel('mortal-s42')
+    const reopened = await freshStore()
+    expect(reopened.useUiPrefsStore.getState().favoriteModels).toEqual(['akagi-native3p'])
+  })
+
+  it('recovers from malformed favorite storage without losing valid model names', async () => {
+    localStorage.setItem('akagi.ui.modelFavorites', 'invalid JSON')
+    expect((await freshStore()).useUiPrefsStore.getState().favoriteModels).toEqual([])
+    localStorage.setItem('akagi.ui.modelFavorites', JSON.stringify(['mortal-s42', null, 2, 'mortal-s42', '']))
+    expect((await freshStore()).useUiPrefsStore.getState().favoriteModels).toEqual(['mortal-s42'])
+  })
 })

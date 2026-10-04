@@ -13,7 +13,7 @@ const SEVERITY_BORDER: Record<ToastSeverity, string> = {
 
 const DEFAULT_DURATION_MS = 5000
 
-export function Toaster() {
+export function Toaster({ nativeSkin = false }: { nativeSkin?: boolean } = {}) {
   return (
     <SonnerToaster
       theme="dark"
@@ -23,7 +23,7 @@ export function Toaster() {
       duration={DEFAULT_DURATION_MS}
       toastOptions={{
         classNames: {
-          toast:
+          toast: nativeSkin ? 'maka-native-toast' :
             'group !bg-popover !text-popover-foreground !ring-1 !ring-foreground/10 !rounded-lg !shadow-lg !border-l-4 !pl-4',
           title: 'text-sm font-medium',
           description: 'text-xs text-muted-foreground',

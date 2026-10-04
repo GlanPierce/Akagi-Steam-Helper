@@ -82,6 +82,9 @@ struct ManagerState {
     /// responses that arrive for the same one are dropped before they are
     /// planned rather than after.
     acted_window: Option<Instant>,
+    // Retired revisions remain retired across an OFF/ON epoch change.
+    steam_decision: Option<u64>,
+    steam_audited: Option<(u64, u64)>,
 }
 
 impl AutoplayManager {
@@ -128,8 +131,16 @@ impl AutoplayManager {
             .await;
         });
 
+        let mut steam_poll=tokio::time::interval(Duration::from_millis(150));
         loop {
             tokio::select! {
+                _ = steam_poll.tick() => {
+                    let steam=self.ctx.steam.read().ok().and_then(|s|s.clone());
+                    if let Some(steam)=steam.filter(|s|s.host.autoplay.load(std::sync::atomic::Ordering::Relaxed)) {
+                        let response=steam.cache.0.read().await.clone();
+                        if let Some(response)=response {self.handle_bot_response(response).await;}
+                    }
+                },
                 msg = bot_rx.recv() => match msg {
                     Ok(resp) => self.handle_bot_response(resp).await,
                     Err(RecvError::Lagged(n)) => warn!("autoplay: bot bus lagged {n}"),
@@ -152,11 +163,24 @@ impl AutoplayManager {
         }
     }
 
-    async fn handle_bot_response(&mut self, resp: BotResponse) {
+    async fn handle_bot_response(&mut self, mut resp: BotResponse) {
         // Re-read config every iteration so `cfg.autoplay.enabled` can be
         // toggled at runtime via the Settings UI without restarting.
         let cfg_guard = self.cfg.read().await;
-        if !cfg_guard.autoplay.enabled {
+        let steam=self.ctx.steam.read().ok().and_then(|s|s.clone()).filter(|s|s.owns_input()
+            && cfg_guard.platform.kind==crate::config::Platform::Majsoul && cfg_guard.capture.mode==crate::config::CaptureMode::Mitm);
+        if let Some(target) = steam.as_ref() {
+            if let Some(revision) = crate::ipc::immersive::response_revision(&resp) {
+                let epoch = target.host.autoplay_epoch.load(std::sync::atomic::Ordering::SeqCst);
+                if self.state.steam_audited != Some((revision, epoch)) {
+                    self.state.steam_audited = Some((revision, epoch));
+                    self.ctx.input_watch.record(serde_json::json!({"event":"model_decision",
+                        "revision":revision, "epoch":epoch, "host":target.host.snapshot(),
+                        "action":resp.action, "meta":resp.meta}));
+                }
+            }
+        }
+        if steam.as_ref().map_or(!cfg_guard.autoplay.enabled,|s|!s.host.autoplay.load(std::sync::atomic::Ordering::Relaxed)) {
             return;
         }
         let cfg = cfg_guard.autoplay.majsoul.clone();
@@ -199,6 +223,18 @@ impl AutoplayManager {
         // bracket releases the tracker mutex before we sleep/click.
         let (our_seat, legal_actions, snapshot, num_players) = {
             let tracker = self.tracker.lock().await;
+            if steam.is_some() {
+                if crate::ipc::immersive::response_revision(&resp) != Some(tracker.events_seen) {return;}
+                if matches!(resp.action, MjaiEvent::Reach {pai:None,..}) {
+                    let Some(pai) = super::steam::fallback_reach_discard(&tracker) else {
+                        steam.as_ref().unwrap().stop();
+                        warn!("Steam autoplay stopped: unresolved riichi discard");
+                        return;
+                    };
+                    warn!(tile=%pai,"Steam autoplay: bare riichi resolved by legal tile-efficiency fallback");
+                    if let MjaiEvent::Reach {pai:ref mut tile,..} = resp.action {*tile=Some(pai);}
+                }
+            }
             let our_seat = match tracker.our_seat() {
                 Some(s) => s,
                 None => return, // game hasn't started or no perspective tagged
@@ -230,8 +266,8 @@ impl AutoplayManager {
             legal_actions: &legal_actions,
             our_seat,
             last_kawa_tile: self.state.last_kawa_tile.as_deref(),
-            last_self_tsumo: self.state.last_self_tsumo.as_deref(),
-            self_riichi_accepted: self.state.self_riichi_accepted,
+            last_self_tsumo: if steam.is_some() {snapshot.players.get(our_seat as usize).and_then(|p|p.drawn_tile.as_deref())} else {self.state.last_self_tsumo.as_deref()},
+            self_riichi_accepted: if steam.is_some() {snapshot.players.get(our_seat as usize).is_some_and(|p|p.riichi_declared)} else {self.state.self_riichi_accepted},
             num_players,
             cfg: &cfg,
             delay_cfg,
@@ -261,6 +297,35 @@ impl AutoplayManager {
 
         let plan = platform.plan(&action_ctx);
         if plan.steps.is_empty() {
+            return;
+        }
+        if let Some(steam)=steam {
+            let Some(revision)=crate::ipc::immersive::response_revision(&resp) else {return;};
+            let epoch=steam.host.autoplay_epoch.load(std::sync::atomic::Ordering::SeqCst);
+            if self.state.steam_decision==Some(revision) {return;}
+            let Some(window)=planned_budget else {
+                steam.stop();
+                warn!(revision,"Steam autoplay stopped: no live server operation window");
+                return;
+            };
+            let tracker=self.tracker.lock().await;
+            let valid=super::steam::decision_current(&steam.host,epoch,revision,tracker.events_seen,
+                tracker.round_active && tracker.our_seat_can_act()==Some(true),crate::proxy::game_transport::connected());
+            drop(tracker);
+            if !valid {return;}
+            self.state.steam_decision=Some(revision);
+            self.ctx.input_watch.record(serde_json::json!({"event":"plan_started", "revision":revision,
+                "epoch":epoch, "action":resp.action, "steps":format!("{:?}",plan.steps),
+                "fixed_ms":window.fixed_ms, "add_ms":window.add_ms, "elapsed_ms":window.elapsed_ms()}));
+            let confirmed = steam.execute(&plan.steps,epoch,revision,&self.tracker,&self.ctx.input_watch,&cfg,&resp.action,window.observed_at,action_ctx.self_riichi_accepted).await;
+            self.ctx.input_watch.record(serde_json::json!({"event":"plan_finished", "revision":revision,
+                "epoch":epoch, "confirmed":confirmed, "host":steam.host.snapshot(), "action":resp.action}));
+            if confirmed {
+                info!(revision,"Steam autoplay: game input acknowledged");
+            } else if steam.host.autoplay_epoch.load(std::sync::atomic::Ordering::SeqCst)==epoch {
+                steam.stop();
+                warn!(revision,"Steam autoplay stopped: focus, decision or input acknowledgement changed");
+            }
             return;
         }
         debug!(
@@ -871,6 +936,7 @@ impl AutoplayManager {
             }
             MjaiEvent::EndGame { .. } => {
                 self.state = ManagerState::default();
+                if let Some(steam)=self.ctx.steam.read().ok().and_then(|s|s.clone()) {steam.stop();}
             }
             MjaiEvent::StartKyoku { .. } | MjaiEvent::EndKyoku => {
                 // Per-kyoku reset: keep last seen rect cache and cached seat,

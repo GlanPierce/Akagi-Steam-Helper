@@ -66,3 +66,17 @@ native_bot/out/
 
 # ZCode session artifacts
 .zcode/
+
+# Local work, runtime state and publication staging
+.superpowers/
+/history/
+/webview-data/
+/configs/
+.env
+.env.local
+
+# Generate locally from the user's installed Steam client, never publish.
+/frontend/public/maka/
+/frontend/src/immersive/previewAssets/
+/frontend/qa-*
+/frontend/public/qa-*

@@ -2,7 +2,8 @@ const WORKFLOW: &str = include_str!("../.github/workflows/pr-build.yml");
 
 #[test]
 fn pr_build_comment_job_uses_pull_request_write_permission() {
-    let (_, comment_job) = WORKFLOW
+    let workflow = WORKFLOW.replace("\r\n", "\n");
+    let (_, comment_job) = workflow
         .split_once("\n  comment:\n")
         .expect("PR build workflow must contain a comment job");
 

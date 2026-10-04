@@ -172,7 +172,12 @@ pub async fn update_config(
         });
     }
 
-    if claim_autoplay_manager_spawn(autoplay_now_enabled, &state.autoplay_manager_started) {
+    if autoplay_now_enabled { ensure_autoplay_manager(&state); }
+    Ok(())
+}
+
+pub(crate) fn ensure_autoplay_manager(state:&AppState) {
+    if claim_autoplay_manager_spawn(true, &state.autoplay_manager_started) {
         let cfg_for_ap = state.config.clone();
         let ctx_for_ap = state.autoplay_context.clone();
         let tracker_for_ap = state.game_tracker.clone();
@@ -202,7 +207,6 @@ pub async fn update_config(
             }
         });
     }
-    Ok(())
 }
 
 /// Flip `overlay.enabled` and apply it, without going through the Settings
@@ -224,6 +228,36 @@ pub async fn set_overlay_enabled(
         cfg.clone()
     };
     persist_config(&cfg, &state.config_path).map_err(|e| e.to_string())?;
+    overlay::reconcile(&app, &cfg.overlay);
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_immersive_options(
+    overlay: Option<crate::config::OverlayConfig>,
+    feature: Option<crate::config::OverlayFeature>,
+    enabled: Option<bool>,
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> CmdResult<()> {
+    let cfg = {
+        let mut current = state.config.write().await;
+        let mut cfg = current.clone();
+        match (overlay, feature, enabled) {
+            (Some(mut overlay), None, None) => {
+                overlay.opacity = overlay.clamped_opacity();
+                overlay.calibration = overlay.calibration.clamped();
+                cfg.overlay = overlay;
+            }
+            (None, Some(feature), Some(enabled)) => cfg.overlay.set_feature(feature, enabled),
+            _ => return Err("supply overlay or one feature change".into()),
+        }
+        // Patch under the config lock: a delayed UI config event must not let
+        // the next quick toggle overwrite the preceding toggle's saved value.
+        persist_config(&cfg, &state.config_path).map_err(|e| e.to_string())?;
+        *current = cfg.clone();
+        cfg
+    };
     overlay::reconcile(&app, &cfg.overlay);
     Ok(())
 }
@@ -1743,6 +1777,14 @@ macro_rules! ipc_handlers {
             $crate::ipc::commands::get_config,
             $crate::ipc::commands::update_config,
             $crate::ipc::commands::set_overlay_enabled,
+            $crate::ipc::immersive::get_immersive_frame,
+            $crate::ipc::immersive_host::get_immersive_host,
+            $crate::ipc::immersive_host::set_immersive_panel,
+            $crate::ipc::immersive_host::toggle_immersive_hints,
+            $crate::ipc::immersive_host::set_immersive_autoplay,
+            $crate::ipc::immersive_host::set_immersive_hotspots,
+            $crate::ipc::immersive_host::set_immersive_targets,
+            $crate::ipc::commands::update_immersive_options,
             $crate::ipc::commands::list_bots,
             $crate::ipc::commands::set_active_bot,
             $crate::ipc::commands::get_bot_settings,

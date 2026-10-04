@@ -73,6 +73,32 @@ pub fn get<R: Runtime>(app: &AppHandle<R>) -> Option<WebviewWindow<R>> {
 pub fn open<R: Runtime>(app: &AppHandle<R>, cfg: &OverlayConfig) -> tauri::Result<()> {
     let rows = cfg.clamped_top_n();
 
+    if cfg.immersive {
+        if let Some(w) = get(app) {
+            w.set_min_size(None::<LogicalSize<f64>>)?;
+            w.set_resizable(false)?;
+            // The host alone owns visibility and input while in this mode.
+            return Ok(());
+        }
+        let w = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html".into()))
+            .title("MAKA INGAME")
+            .inner_size(1280.0, 720.0)
+            .decorations(false)
+            .transparent(true)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .maximizable(false)
+            .minimizable(false)
+            .resizable(false)
+            .shadow(false)
+            .focused(false)
+            .visible(false)
+            .build()?;
+        w.set_ignore_cursor_events(true)?;
+        info!("immersive Steam HUD opened (waiting for foreground game)");
+        return Ok(());
+    }
+
     if let Some(w) = get(app) {
         w.set_always_on_top(cfg.always_on_top)?;
         // Raising `top_n` in Settings adds rows to a window that may already be
@@ -84,7 +110,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, cfg: &OverlayConfig) -> tauri::Resul
     }
 
     let w = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html".into()))
-        .title("Akagi Overlay")
+        .title("MAKA INGAME")
         .inner_size(DEFAULT_WIDTH, default_height(rows))
         .min_inner_size(MIN_WIDTH, min_height(rows))
         .decorations(false)
@@ -139,6 +165,25 @@ pub fn reconcile<R: Runtime>(app: &AppHandle<R>, cfg: &OverlayConfig) {
 }
 
 fn apply<R: Runtime>(app: &AppHandle<R>, cfg: &OverlayConfig) {
+    let mut mode_changed = false;
+    if let Some(host) = app.try_state::<super::immersive_host::SharedHost>() {
+        let next = cfg.enabled && cfg.immersive;
+        mode_changed = host.set_enabled(next);
+        if mode_changed {
+            host.panel
+                .store(false, std::sync::atomic::Ordering::Relaxed);
+        }
+    }
+    // Recreate on a mode transition to reset HWND styles, input passthrough and
+    // resizability together. Merely disabling the host leaves those styles set.
+    if mode_changed {
+        if let Some(w) = get(app) {
+            if let Err(e) = w.destroy() {
+                warn!("overlay mode transition failed: {e}");
+                return;
+            }
+        }
+    }
     let result = if cfg.enabled {
         open(app, cfg)
     } else {
@@ -147,6 +192,17 @@ fn apply<R: Runtime>(app: &AppHandle<R>, cfg: &OverlayConfig) {
     if let Err(e) = result {
         warn!("overlay: reconcile failed: {e}");
         return;
+    }
+    if mode_changed && cfg.enabled && !cfg.immersive {
+        if let Some(w) = get(app) {
+            let _ = w.set_ignore_cursor_events(false);
+            let _ = w.set_resizable(true);
+            let _ = w.set_size(LogicalSize::new(
+                DEFAULT_WIDTH,
+                default_height(cfg.clamped_top_n()),
+            ));
+            let _ = w.center();
+        }
     }
     // Broadcast, not `emit_to(LABEL, …)`: the overlay needs the new top-N /
     // opacity, and the main window needs it to keep its toggles in sync with an

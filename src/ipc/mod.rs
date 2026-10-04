@@ -42,7 +42,19 @@
 
 pub mod capture_supervisor;
 pub mod commands;
+pub mod immersive;
+pub mod immersive_contours;
+mod immersive_templates;
+pub mod immersive_host;
+#[cfg(windows)]
+mod immersive_windows;
+#[cfg(windows)]
+mod immersive_input;
+#[cfg(windows)]
+mod immersive_capture;
 pub mod overlay;
+#[cfg(windows)]
+pub mod tray;
 pub mod state;
 
 pub use state::AppState;
@@ -56,6 +68,14 @@ use tracing::warn;
 /// Call from inside the builder's `.setup` closure.
 pub fn install<R: Runtime>(app: &AppHandle<R>, state: AppState) -> Result<()> {
     app.manage(state.clone());
+    app.manage(immersive::ImmersiveCache::default());
+    let host: immersive_host::SharedHost = std::sync::Arc::new(immersive_host::HostControl::default());
+    *state.autoplay_context.steam.write().unwrap_or_else(|e|e.into_inner()) = Some(crate::autoplay::steam::SteamTarget {
+        host:host.clone(),cache:app.state::<immersive::ImmersiveCache>().inner().clone(),capture:state.capture_control.clone(),
+    });
+    app.manage(host.clone());
+    #[cfg(windows)]
+    immersive_windows::start(app.clone(), host);
     spawn_forwarders(app.clone(), state);
     Ok(())
 }
@@ -64,9 +84,26 @@ fn spawn_forwarders<R: Runtime>(app: AppHandle<R>, state: AppState) {
     forward(app.clone(), state.mjai_bus.subscribe(), "mjai-event");
     forward(
         app.clone(),
-        state.bot_response_bus.subscribe(),
-        "bot-response",
+        state.post_tracker_bus.subscribe(),
+        "immersive-event",
     );
+    let mut responses = state.bot_response_bus.subscribe();
+    let cache = app.state::<immersive::ImmersiveCache>().inner().clone();
+    let response_app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        loop {
+            match responses.recv().await {
+                Ok(response) => {
+                    cache.store(&response).await;
+                    let _ = response_app.emit("bot-response", &response);
+                }
+                Err(broadcast::error::RecvError::Lagged(_)) => {
+                    *cache.0.write().await = None;
+                }
+                Err(broadcast::error::RecvError::Closed) => break,
+            }
+        }
+    });
     forward(app.clone(), state.notify_bus.subscribe(), "notify");
     forward(
         app.clone(),

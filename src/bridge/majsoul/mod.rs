@@ -157,7 +157,7 @@ pub struct MajsoulBridge {
     num_players: u8,
     /// Shared slot for the server's per-decision-window time budget
     /// (`operation.time_fixed` / `time_add`, both ms). `None` when the
-    /// autoplay context isn't wired (MITM path, tests).
+    /// autoplay context isn't wired (standalone logging and some tests).
     time_budget: Option<SharedTimeBudget>,
     /// True while `handle_game_restore` replays historical actions through
     /// `handle_action_prototype`. Replayed operations must not clobber the
@@ -170,7 +170,7 @@ pub struct MajsoulBridge {
     restore_budget: Option<TimeBudget>,
     /// Counter of the client's own uplink input commands, shared with the
     /// autoplay manager for click verification (see `autoplay::verify`).
-    /// `None` when the autoplay context isn't wired (MITM path, tests).
+    /// `None` when the autoplay context isn't wired (standalone logging/tests).
     input_watch: Option<crate::autoplay::verify::SharedInputWatch>,
 }
 
@@ -276,9 +276,6 @@ impl MajsoulBridge {
                 Vec::new()
             }
             (MessageType::Response, METHOD_AUTH_GAME) => {
-                // New game: whatever window the previous game left in the
-                // budget slot is stale.
-                self.store_budget(None);
                 self.handle_auth_game_response(&msg.payload)
             }
             // The client only sends these once it has accepted an input,
@@ -288,7 +285,7 @@ impl MajsoulBridge {
             | (MessageType::Request, METHOD_INPUT_CHI_PENG_GANG) => {
                 if let Some(watch) = &self.input_watch {
                     if is_client_initiated(&msg.payload) {
-                        watch.note_sent(input_kind(msg.method_name.as_ref(), &msg.payload));
+                        watch.note_command(input_kind(msg.method_name.as_ref(), &msg.payload), msg.method_name.as_ref(), &msg.payload);
                     }
                 }
                 Vec::new()
@@ -420,6 +417,7 @@ impl MajsoulBridge {
             .and_then(JsonValue::as_u64)
             .unwrap_or(0);
         let committed = self.restore_budget.take().map(|mut b| {
+            b.observed_at = Instant::now();
             b.opened_at = Instant::now()
                 .checked_sub(Duration::from_secs(passed))
                 .unwrap_or_else(Instant::now);
@@ -455,6 +453,11 @@ impl MajsoulBridge {
     }
 
     fn store_budget(&self, budget: Option<TimeBudget>) {
+        // All commit paths (auth, restore, end as well as live operations)
+        // share one clock. An unseated probe/lobby flow must not clear it.
+        if self.seat.is_none() {
+            return;
+        }
         if let Some(slot) = &self.time_budget {
             if let Ok(mut guard) = slot.write() {
                 *guard = budget;
@@ -495,6 +498,7 @@ impl MajsoulBridge {
             fixed_ms: u32::try_from(fixed_ms).unwrap_or(u32::MAX),
             add_ms: u32::try_from(add_ms).unwrap_or(u32::MAX),
             opened_at: Instant::now(),
+            observed_at: Instant::now(),
             source,
         })
     }
@@ -1228,6 +1232,8 @@ impl MajsoulBridge {
         };
         let seat = seat as Actor;
         self.seat = Some(seat);
+        // Only a successfully authenticated playing flow starts a new game.
+        self.store_budget(None);
         // 3p tables produce length-3 seat_list; 4p length-4. Anything else
         // would be a protocol surprise — clamp into [3, 4] but log loudly.
         let detected = seat_list.len() as u8;
@@ -1548,6 +1554,9 @@ impl Bridge for MajsoulBridge {
                     }),
                 });
                 let events = self.dispatch(&msg);
+                if matches!(msg.msg_type, MessageType::Notify) && msg.method_name.as_ref() == METHOD_ACTION_PROTOTYPE {
+                    if let Some(watch) = &self.input_watch { watch.note_server_actions(&events); }
+                }
                 // Rotate before writing so the StartGame event itself lands
                 // in the freshly-opened file, not the previous game's file.
                 if events
@@ -4319,10 +4328,12 @@ mod tests {
             fixed_ms: 1,
             add_ms: 1,
             opened_at: Instant::now(),
+            observed_at: Instant::now(),
             source: BudgetSource::DiscardTile,
         });
 
         let payload: JsonValue = serde_json::from_str(SYNC_GAME_SAMPLE).unwrap();
+        let previous_input=Instant::now();
         bridge.dispatch(&resp(METHOD_SYNC_GAME, payload));
 
         let b = slot
@@ -4331,6 +4342,7 @@ mod tests {
             .expect("final window must be committed");
         assert_eq!(b.fixed_ms, 300_000, "wire value of the final window");
         assert_eq!(b.source, BudgetSource::DealTile);
+        assert!(b.observed_at >= previous_input,"restored window must not inherit an old input timestamp");
         assert!(
             b.elapsed_ms() >= 16_000,
             "opened_at must be backdated by passed_waiting_time (got {}ms)",

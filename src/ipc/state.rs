@@ -153,6 +153,10 @@ impl AppState {
         history_platform: SharedPlatform,
         runtime: Option<PythonRuntime>,
     ) -> Self {
+        let autoplay_context = Arc::new(AutoplayContext::new());
+        if let Err(error) = autoplay_context.input_watch.open_audit(&log_session.dir().join("autoplay.jsonl")) {
+            tracing::warn!(%error, "could not open autoplay evidence log");
+        }
         Self {
             config: Arc::new(RwLock::new(config)),
             config_path: Arc::new(config_path),
@@ -174,7 +178,7 @@ impl AppState {
             runtime,
             syncs_in_flight: Arc::new(Mutex::new(HashSet::new())),
             bot_manager_started: Arc::new(AtomicBool::new(false)),
-            autoplay_context: Arc::new(AutoplayContext::new()),
+            autoplay_context,
             autoplay_manager_started: Arc::new(AtomicBool::new(false)),
             updater_lock: Arc::new(Mutex::new(())),
             pending_update: Arc::new(RwLock::new(None)),

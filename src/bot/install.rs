@@ -356,12 +356,8 @@ async fn extract_place_and_finalize(
 
     install_result?;
 
-    // Heads-up (non-fatal): a complete Akagi bot ships `pyproject.toml`
-    // (deps / `uv sync`) and `manifest.toml` (settings schema). `bot.py`
-    // alone clears `validate_layout`, but if these are also missing the user
-    // most likely pointed the installer at the wrong source. Warn so they can
-    // double-check rather than silently ending up with a bot that has no deps
-    // and no settings.
+    // The executable and dependency file were checked before placement.
+    // Missing optional settings metadata still deserves a visible warning.
     let missing = missing_recommended_files(&dest_dir);
     if !missing.is_empty() {
         let _ = notify.send(
@@ -378,8 +374,7 @@ async fn extract_place_and_finalize(
     }
 
     // Post-install: run `uv sync` so dependency failures surface here rather
-    // than at game-start. Skip silently for pyproject-less bots — only the
-    // explicit Reinstall-environment path treats that as an error.
+    // than at game-start.
     let pyproject = dest_dir.join("pyproject.toml");
     if pyproject.is_file() {
         match runtime {
@@ -545,22 +540,25 @@ pub fn strip_single_top_level(dir: &Path) -> Result<PathBuf> {
     }
 }
 
-/// Reject installs that don't look like bots — `bot.py` is the registry
-/// contract. Pyproject is recommended but not enforced (some bots may
-/// run on system python without uv).
+/// Match the runtime contract before occupying the final model directory.
+/// BotManager always calls `ensure_synced`, which requires `pyproject.toml`.
 pub fn validate_layout(bot_root: &Path) -> Result<()> {
     let bot_py = bot_root.join("bot.py");
     if !bot_py.is_file() {
         bail!("extracted archive does not contain bot.py at the top level — refusing install");
+    }
+    if !bot_root.join("pyproject.toml").is_file() {
+        bail!(
+            "模型包缺少 pyproject.toml 依赖配置，请选择包含 bot.py 和 pyproject.toml 的完整模型包"
+        );
     }
     Ok(())
 }
 
 /// Files a well-formed Akagi bot is expected to ship alongside `bot.py`:
 /// `pyproject.toml` (Python deps / `uv sync`) and `manifest.toml` (settings
-/// schema + metadata). Recommended, not required — `validate_layout` only
-/// hard-fails on a missing `bot.py`. When these are also absent the install
-/// target is most likely not the bot the user meant to install.
+/// schema + metadata). New installs require the dependency file; older
+/// installed directories can still be inspected for either missing file.
 const RECOMMENDED_FILES: [&str; 2] = ["pyproject.toml", "manifest.toml"];
 
 /// Return the [`RECOMMENDED_FILES`] that are *not* present at the top level
@@ -713,12 +711,15 @@ mod tests {
     }
 
     #[test]
-    fn validate_layout_requires_bot_py() {
+    fn validate_layout_requires_bot_and_dependency_files() {
         let tmp = TempDir::new().unwrap();
         let err = validate_layout(tmp.path()).unwrap_err();
         assert!(err.to_string().contains("bot.py"));
 
         std::fs::write(tmp.path().join("bot.py"), b"").unwrap();
+        let err = validate_layout(tmp.path()).unwrap_err();
+        assert!(err.to_string().contains("pyproject.toml"));
+        std::fs::write(tmp.path().join("pyproject.toml"), b"[project]\n").unwrap();
         validate_layout(tmp.path()).unwrap();
     }
 
@@ -782,7 +783,13 @@ mod tests {
         let dest = TempDir::new().unwrap();
         let zip = src.path().join("mybot.zip");
         // Archive wrapped in a single top-level dir, like a real release zip.
-        make_zip(&zip, &[("mybot/bot.py", b"print('hi')\n")]);
+        make_zip(
+            &zip,
+            &[
+                ("mybot/bot.py", b"print('hi')\n"),
+                ("mybot/pyproject.toml", b"[project]\n"),
+            ],
+        );
 
         let notify = crate::event_bus::notify_bus();
         let spec = LocalZipInstallSpec {
@@ -796,7 +803,7 @@ mod tests {
         assert_eq!(entry.name, "testbot");
         assert_eq!(entry.dir, dest.path().join("testbot"));
         assert!(dest.path().join("testbot/bot.py").is_file());
-        assert!(entry.pyproject.is_none());
+        assert!(entry.pyproject.is_some());
         // The user's source zip must be left untouched.
         assert!(zip.is_file(), "source zip should not be deleted");
     }
@@ -805,9 +812,15 @@ mod tests {
     async fn install_from_zip_derives_name_from_filename() {
         let src = TempDir::new().unwrap();
         let dest = TempDir::new().unwrap();
-        // No wrapping dir: a single top-level file stays at the root.
+        // No wrapping dir: model files stay at the root.
         let zip = src.path().join("coolbot.zip");
-        make_zip(&zip, &[("bot.py", b"print('hi')\n")]);
+        make_zip(
+            &zip,
+            &[
+                ("bot.py", b"print('hi')\n"),
+                ("pyproject.toml", b"[project]\n"),
+            ],
+        );
 
         let notify = crate::event_bus::notify_bus();
         let spec = LocalZipInstallSpec {
@@ -873,6 +886,32 @@ mod tests {
         assert!(err.to_string().contains("bot.py"));
         // Failed install leaves no destination dir behind.
         assert!(!dest.path().join("nobot").exists());
+    }
+
+    #[tokio::test]
+    async fn install_from_zip_rejects_missing_dependencies_and_allows_corrected_retry() {
+        let src = TempDir::new().unwrap();
+        let dest = TempDir::new().unwrap();
+        let zip = src.path().join("incomplete.zip");
+        make_zip(&zip, &[("bot.py", b"")]);
+        let notify = crate::event_bus::notify_bus();
+        let spec = || LocalZipInstallSpec {
+            zip_path: zip.clone(),
+            name: Some("retrybot".into()),
+        };
+
+        let err = install_from_zip(spec(), dest.path(), &notify, None)
+            .await
+            .unwrap_err();
+        assert!(err.to_string().contains("pyproject.toml"));
+        assert!(!dest.path().join("retrybot").exists());
+        assert!(zip.is_file());
+
+        make_zip(&zip, &[("bot.py", b""), ("pyproject.toml", b"[project]\n")]);
+        let installed = install_from_zip(spec(), dest.path(), &notify, None)
+            .await
+            .expect("a corrected archive can retry the same name");
+        assert!(installed.pyproject.is_some());
     }
 
     #[tokio::test]

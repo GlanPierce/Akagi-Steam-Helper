@@ -114,7 +114,7 @@ export function Sidebar() {
               'flex items-center gap-2 rounded-md px-1 py-1 hover:opacity-80 transition-opacity',
               !open && 'justify-center',
             )}
-            aria-label="Akagi"
+            aria-label="MAKA INGAME"
           >
             {open ? (
               <span className="flex items-center gap-1.5 whitespace-nowrap">

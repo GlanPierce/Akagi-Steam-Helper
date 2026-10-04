@@ -121,3 +121,21 @@ mjai.app
 
   Subprocess convention reference (JSONL stdin/stdout, argv, env vars,
   end-of-batch flush) in src/bot/ and mjai_bot/. Convention only.
+
+================================================================================
+Steam adaptation (MAKA INGAME / Akagi Steam Helper), 2026
+================================================================================
+
+This modified version adds Windows Steam integration, an in-game HUD and menu,
+model import/selection/favorites, launcher support, and related fixes and tests.
+Based on Akagi v3.7.1, commit 81f530639cf10740ca1876df827d3c08efbe1175.
+Original notices above remain in effect.
+
+Additional external tools: InterceptSuite/ProxyBridge (v4.0.0, MIT),
+K0lb3/UnityPy (MIT). External Mortal/libriichi engines are from Equim-chan/Mortal
+(AGPL-3.0-or-later); their code, binaries and imported model packages are not
+included here. Akagi's own native_bot is distinct from Mortal.
+
+See THIRD_PARTY_NOTICES.md for source links, usage and resource exclusions.
+Mahjong Soul game artwork and fonts are not licensed under Apache-2.0 by this
+project. Full extracted game assets are excluded from the public source branch.

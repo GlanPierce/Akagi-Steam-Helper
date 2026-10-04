@@ -18,7 +18,7 @@ pub use general::GeneralConfig;
 pub use logging::LoggingConfig;
 pub use merge::merge_into;
 pub use network::{GithubMirrorMode, NetworkConfig};
-pub use overlay::{OverlayConfig, TOP_N_MAX, TOP_N_MIN};
+pub use overlay::{OverlayConfig, OverlayFeature, TOP_N_MAX, TOP_N_MIN};
 pub use platform::{Platform, PlatformConfig};
 pub use proxy::ProxyConfig;
 
@@ -37,6 +37,19 @@ pub struct AppConfig {
     pub autoplay: AutoplayConfig,
     pub overlay: OverlayConfig,
     pub network: NetworkConfig,
+}
+
+impl AppConfig {
+    /// The game menu is the only UI. Keep its host and model runner available
+    /// when migrating a desktop-only configuration; feature toggles still own
+    /// visibility. Startup does not write this migration back to disk.
+    pub fn for_ingame(&self) -> Self {
+        let mut next = self.clone();
+        next.overlay.enabled = true;
+        next.overlay.immersive = true;
+        next.bot.enabled = true;
+        next
+    }
 }
 
 enum ResolvedPath {

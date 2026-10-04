@@ -73,6 +73,8 @@ pub struct GameTracker {
     /// Total events fed since process start. Useful for "is the bridge
     /// alive?" checks; not reset on game boundaries.
     pub events_seen: u64,
+    /// A result/round boundary must retire all outstanding HUD decisions.
+    pub round_active: bool,
 }
 
 impl GameTracker {
@@ -82,6 +84,7 @@ impl GameTracker {
             rule: GameRule::default_tenhou(),
             our_seat: None,
             events_seen: 0,
+            round_active: false,
         }
     }
 
@@ -90,6 +93,15 @@ impl GameTracker {
     /// JSON conversion failure, which means a malformed event.
     pub fn handle(&mut self, ev: &AkagiEvent) -> Result<()> {
         self.events_seen += 1;
+        match ev {
+            AkagiEvent::StartKyoku { .. } => self.round_active = true,
+            AkagiEvent::StartGame { .. }
+            | AkagiEvent::EndKyoku
+            | AkagiEvent::EndGame { .. }
+            | AkagiEvent::Hora { .. }
+            | AkagiEvent::Ryukyoku { .. } => self.round_active = false,
+            _ => {}
+        }
 
         if let AkagiEvent::StartGame {
             id, num_players, ..
@@ -454,16 +466,20 @@ async fn run(
                 // later one. A burst of events from one frame is applied in
                 // microseconds; anything that asks afterwards has already
                 // missed the state it meant to ask about.
-                let can_act = {
+                let (can_act, revision) = {
                     let mut t = tracker.lock().await;
                     if let Err(e) = t.handle(&ev) {
                         warn!("game tracker: handle error: {e:#}");
                     }
-                    t.our_seat_can_act()
+                    (t.our_seat_can_act(), t.events_seen)
                 };
                 if let Some(p) = &post {
                     // Receiver may have lagged or no-one subscribed yet — ignore.
-                    let _ = p.send(TrackedEvent { event: ev, can_act });
+                    let _ = p.send(TrackedEvent {
+                        event: ev,
+                        can_act,
+                        revision,
+                    });
                 }
             }
             Err(broadcast::error::RecvError::Lagged(n)) => {

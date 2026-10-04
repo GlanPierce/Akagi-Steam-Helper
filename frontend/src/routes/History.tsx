@@ -204,7 +204,7 @@ function FilterCard({
           </Field>
 
           <Field label={t('history.date_label')}>
-            <div className="flex gap-1">
+            <div className="history-date-range flex gap-1">
               <Input
                 type="date"
                 value={dateOnly(filter.started_after)}

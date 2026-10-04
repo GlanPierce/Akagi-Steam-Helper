@@ -15,8 +15,8 @@
 //!   refresh) and invalidated on round transitions.
 //!
 //! Both fields are populated only when the chromium capture backend is
-//! active. The MITM backend leaves the context untouched, so reads return
-//! `None` and the manager skips the click.
+//! active. The MITM backend instead wires the protocol clock and input watch
+//! for native Steam input, and the frame-injection bus for Riichi City.
 
 use chromiumoxide::page::Page;
 use serde::{Deserialize, Serialize};
@@ -25,6 +25,8 @@ use tokio::sync::RwLock;
 
 #[derive(Default)]
 pub struct AutoplayContext {
+    /// Session-only Steam control; never restored from saved browser settings.
+    pub steam: std::sync::RwLock<Option<super::steam::SteamTarget>>,
     pub page: Arc<RwLock<Option<Page>>>,
     pub canvas_rect: Arc<RwLock<Option<CanvasRect>>>,
     /// Server-granted time budget for the current decision window.

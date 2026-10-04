@@ -169,6 +169,12 @@ export type NativeApiConfig = {
 
 /** The always-on-top suggestion overlay. Mirrors `crate::config::OverlayConfig`. */
 export type OverlayConfig = {
+  immersive?: boolean
+  show_analysis?: boolean
+  show_risk?: boolean
+  show_discards?: boolean
+  show_actions?: boolean
+  calibration?: { x: number; y: number; scale: number; hand_y: number; button_y: number }
   enabled: boolean
   top_n: number
   opacity: number
@@ -442,6 +448,7 @@ export type OpponentRisk = {
 }
 
 export type AnalysisResult = {
+  revision?: number
   seat: number
   turn: number
   shanten: number
@@ -482,6 +489,7 @@ export type PlayerSnapshot = {
   riichi_declaration_index: number | null
   /** 3p only: north tiles set aside via kita / nukidora. Empty in 4p. */
   kita_tiles: string[]
+  drawn_tile?: string | null
 }
 
 export type GameStateSnapshot = {

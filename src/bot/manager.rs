@@ -183,13 +183,18 @@ impl BotManager {
         self.handle_tracked(TrackedEvent {
             event,
             can_act: None,
+            revision: 0,
         })
         .await
     }
 
     /// Drive one tracked event through the manager.
     pub async fn handle_tracked(&mut self, tracked: TrackedEvent) -> Result<()> {
-        let TrackedEvent { event, can_act } = tracked;
+        let TrackedEvent {
+            event,
+            can_act,
+            revision,
+        } = tracked;
         // Kyoku/game boundaries clear the one-shot reach-echo drop: a lost
         // declaration never produces the echo it was waiting for, so the flag
         // must not survive into the next hand and eat a real reach there.
@@ -346,6 +351,17 @@ impl BotManager {
             self.drop_next_own_reach = true;
         }
 
+        // Stamp the triggering revision, never a tracker read after inference.
+        // A slow response can then be discarded by a newer game frame.
+        if revision > 0 {
+            let mut meta = match resp.meta.take() {
+                Some(serde_json::Value::Object(m)) => m,
+                Some(other) => serde_json::Map::from_iter([("original_meta".into(), other)]),
+                None => serde_json::Map::new(),
+            };
+            meta.insert("akagi_revision".into(), revision.into());
+            resp.meta = Some(serde_json::Value::Object(meta));
+        }
         debug!(action = ?resp.action, meta = ?resp.meta, reaction_ms, "bot reacted");
         // Inspector record: pair the trigger event (the last item in the
         // batch is the one that crossed the decision-point threshold)
@@ -914,7 +930,29 @@ mod tests {
     }
 
     fn tracked(event: MjaiEvent, can_act: Option<bool>) -> TrackedEvent {
-        TrackedEvent { event, can_act }
+        TrackedEvent {
+            event,
+            can_act,
+            revision: 0,
+        }
+    }
+
+    #[tokio::test]
+    async fn immersive_response_keeps_trigger_revision_and_model_metadata() {
+        let response = BotResponse {
+            action: MjaiEvent::None,
+            meta: Some(serde_json::json!({"shanten": 2, "show": {"items": []}})),
+        };
+        let (mut manager, _, mut responses, _, _) = manager_with_mock(vec![response]);
+        let mut event = tracked(dahai(0), Some(true));
+        event.revision = 12;
+        manager.handle_tracked(event).await.unwrap();
+        let meta = responses.try_recv().unwrap().meta.unwrap();
+        assert_eq!(
+            meta["akagi_revision"], 12,
+            "the trigger revision survives inference"
+        );
+        assert_eq!(meta["shanten"], 2, "stamping must preserve model metadata");
     }
 
     /// Regression (Hora answered with a pass press): an opponent's discard we

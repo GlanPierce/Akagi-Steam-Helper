@@ -835,7 +835,16 @@ fn build_show_meta_mjai(
             items.push(make_show_item(label, &pais, Some(c.prob)));
         }
     }
-    wrap_show(items, title)
+    let mut meta = wrap_show(items, title)?;
+    meta["akagi_policy"] = serde_json::json!({
+        "complete": false, "granularity": "candidate_label",
+        "candidates": candidates.iter().map(|c| {
+            let key = if let Some(tile) = c.action.strip_prefix("dahai:") { format!("discard:{tile}") }
+                else { match c.action.as_str() { "none" => "pass", "nukidora" => "kita", s => s }.to_string() };
+            serde_json::json!({"action": key, "prob": c.prob})
+        }).collect::<Vec<_>>()
+    });
+    Some(meta)
 }
 
 /// Label + tiles for a resolved mjai reaction (the exact chosen move).
@@ -939,7 +948,43 @@ fn build_show_meta(candidates: &[(BotAction, f32)]) -> Option<serde_json::Value>
             make_show_item(label, &pais, Some(*p as f64))
         })
         .collect();
-    wrap_show(items, SHOW_TITLE_LOCAL)
+    let mut meta = wrap_show(items, SHOW_TITLE_LOCAL)?;
+    let sum: f32 = candidates.iter().map(|(_, p)| p).sum();
+    meta["akagi_policy"] = serde_json::json!({
+        "complete": (sum - 1.0).abs() < 1e-5, "granularity": "action_index",
+        "candidates": candidates.iter().map(|(a, p)| serde_json::json!({"action": policy_key(a), "prob": p})).collect::<Vec<_>>()
+    });
+    Some(meta)
+}
+
+/// Canonical native action buckets. Red/ordinary fives share the native
+/// discard logit; kan has one logit per tile type, not one global kan logit.
+fn policy_key(a: &BotAction) -> String {
+    let base = |s: &str| s.trim_end_matches('r').to_string();
+    match a {
+        BotAction::Dahai { pai, .. } => format!("discard_base:{}", base(pai)),
+        BotAction::Reach { .. } => "reach".into(),
+        BotAction::Chi { pai, consumed, .. } => {
+            let rank = pai.as_bytes().first().copied().unwrap_or(0);
+            let below = consumed
+                .iter()
+                .filter(|t| t.as_bytes().first().copied().unwrap_or(0) < rank)
+                .count();
+            ["chi_low", "chi_mid", "chi_high"][below.min(2)].into()
+        }
+        BotAction::Pon { .. } => "pon".into(),
+        BotAction::Daiminkan { pai, .. } | BotAction::Kakan { pai, .. } => {
+            format!("kan_tile:{}", base(pai))
+        }
+        BotAction::Ankan { consumed } => format!(
+            "kan_tile:{}",
+            base(consumed.first().map(String::as_str).unwrap_or(""))
+        ),
+        BotAction::Hora { .. } => "hora".into(),
+        BotAction::Kyushu => "ryukyoku".into(),
+        BotAction::Kita => "kita".into(),
+        BotAction::Pass => "pass".into(),
+    }
 }
 
 /// Label + tiles for one bot action.
@@ -1981,6 +2026,12 @@ mod tests {
             ),
         ];
         let meta = build_show_meta(&cands).unwrap();
+        assert_eq!(meta["akagi_policy"]["complete"], true);
+        assert_eq!(meta["akagi_policy"]["granularity"], "action_index");
+        assert_eq!(
+            meta["akagi_policy"]["candidates"][0]["action"],
+            "discard_base:1m"
+        );
         assert_eq!(
             meta["show"]["title"], SHOW_TITLE_LOCAL,
             "a local decision must be titled as such"

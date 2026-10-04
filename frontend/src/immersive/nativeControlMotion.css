@@ -1,0 +1,67 @@
+/* Unity UI_MakaMJ maka_btns_show/hide: 60 Hz Hermite curve samples.
+ * Show 15 frames, hide 5; translation + alpha only, no scale overshoot.
+ * Previous/next use their native curves. The extra upper row extends the
+ * previous row's vertical travel from the same native animation origin. */
+.maka-quick-settings .maka-control-art { animation: maka-prev-show 250ms linear both; }
+.maka-quick-settings .maka-feature-button:nth-child(3) .maka-control-art { animation-name: maka-next-show; }
+.maka-quick-settings.is-closing .maka-control-art { animation: maka-prev-hide 83.333333ms linear both; }
+.maka-quick-settings.is-closing .maka-feature-button:nth-child(3) .maka-control-art { animation-name: maka-next-hide; }
+.maka-quick-settings .maka-control-art > img { animation: none; }
+.maka-feature-button .maka-control-art { transform-origin: 50% 50%; }
+
+@keyframes maka-prev-show {
+  0.00000% { opacity: 0.00000; transform: translate(calc(148.40000 * var(--maka-control-unit)),calc(70.90000 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  6.66667% { opacity: 0.00000; transform: translate(calc(101.77216 * var(--maka-control-unit)),calc(51.45134 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  13.33333% { opacity: 0.25926; transform: translate(calc(59.66415 * var(--maka-control-unit)),calc(32.95953 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  20.00000% { opacity: 0.74074; transform: translate(calc(28.32406 * var(--maka-control-unit)),calc(18.46295 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  26.66667% { opacity: 1.00000; transform: translate(calc(14.00000 * var(--maka-control-unit)),calc(11.00000 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  33.33333% { opacity: 1.00000; transform: translate(calc(10.58853 * var(--maka-control-unit)),calc(8.31956 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  40.00000% { opacity: 1.00000; transform: translate(calc(7.78152 * var(--maka-control-unit)),calc(6.11405 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  46.66667% { opacity: 1.00000; transform: translate(calc(5.52006 * var(--maka-control-unit)),calc(4.33719 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  53.33333% { opacity: 1.00000; transform: translate(calc(3.74525 * var(--maka-control-unit)),calc(2.94270 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  60.00000% { opacity: 1.00000; transform: translate(calc(2.39820 * var(--maka-control-unit)),calc(1.88430 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  66.66667% { opacity: 1.00000; transform: translate(calc(1.41999 * var(--maka-control-unit)),calc(1.11570 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  73.33333% { opacity: 1.00000; transform: translate(calc(0.75172 * var(--maka-control-unit)),calc(0.59063 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  80.00000% { opacity: 1.00000; transform: translate(calc(0.33449 * var(--maka-control-unit)),calc(0.26281 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  86.66667% { opacity: 1.00000; transform: translate(calc(0.10939 * var(--maka-control-unit)),calc(0.08595 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  93.33333% { opacity: 1.00000; transform: translate(calc(0.01753 * var(--maka-control-unit)),calc(0.01377 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  100.00000% { opacity: 1.00000; transform: translate(calc(0.00000 * var(--maka-control-unit)),calc(0.00000 * var(--maka-control-unit) * var(--feature-y-factor))); }
+}
+@keyframes maka-next-show {
+  0.00000% { opacity: 0.00000; transform: translate(calc(152.20000 * var(--maka-control-unit)),calc(-43.80000 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  6.66667% { opacity: 0.00000; transform: translate(calc(105.00305 * var(--maka-control-unit)),calc(-29.81101 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  13.33333% { opacity: 0.25926; transform: translate(calc(61.14691 * var(--maka-control-unit)),calc(-17.65911 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  20.00000% { opacity: 0.74074; transform: translate(calc(28.02336 * var(--maka-control-unit)),calc(-8.80012 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  26.66667% { opacity: 1.00000; transform: translate(calc(13.02416 * var(--maka-control-unit)),calc(-4.68985 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  33.33333% { opacity: 1.00000; transform: translate(calc(9.85048 * var(--maka-control-unit)),calc(-3.54705 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  40.00000% { opacity: 1.00000; transform: translate(calc(7.23912 * var(--maka-control-unit)),calc(-2.60673 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  46.66667% { opacity: 1.00000; transform: translate(calc(5.13530 * var(--maka-control-unit)),calc(-1.84916 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  53.33333% { opacity: 1.00000; transform: translate(calc(3.48420 * var(--maka-control-unit)),calc(-1.25462 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  60.00000% { opacity: 1.00000; transform: translate(calc(2.23104 * var(--maka-control-unit)),calc(-0.80337 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  66.66667% { opacity: 1.00000; transform: translate(calc(1.32101 * var(--maka-control-unit)),calc(-0.47568 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  73.33333% { opacity: 1.00000; transform: translate(calc(0.69932 * var(--maka-control-unit)),calc(-0.25182 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  80.00000% { opacity: 1.00000; transform: translate(calc(0.31117 * var(--maka-control-unit)),calc(-0.11205 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  86.66667% { opacity: 1.00000; transform: translate(calc(0.10177 * var(--maka-control-unit)),calc(-0.03665 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  93.33333% { opacity: 1.00000; transform: translate(calc(0.01631 * var(--maka-control-unit)),calc(-0.00587 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  100.00000% { opacity: 1.00000; transform: translate(calc(0.00000 * var(--maka-control-unit)),calc(0.00000 * var(--maka-control-unit) * var(--feature-y-factor))); }
+}
+@keyframes maka-prev-hide {
+  0.00000% { opacity: 1.00000; transform: translate(calc(0.00000 * var(--maka-control-unit)),calc(0.00000 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  20.00000% { opacity: 0.84375; transform: translate(calc(10.05403 * var(--maka-control-unit)),calc(5.74450 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  40.00000% { opacity: 0.50000; transform: translate(calc(36.09808 * var(--maka-control-unit)),calc(20.06949 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  60.00000% { opacity: 0.15625; transform: translate(calc(71.95511 * var(--maka-control-unit)),calc(38.61223 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  80.00000% { opacity: 0.00000; transform: translate(calc(111.44810 * var(--maka-control-unit)),calc(57.00998 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  100.00000% { opacity: 0.00000; transform: translate(calc(148.39999 * var(--maka-control-unit)),calc(70.90000 * var(--maka-control-unit) * var(--feature-y-factor))); }
+}
+@keyframes maka-next-hide {
+  0.00000% { opacity: 1.00000; transform: translate(calc(0.00000 * var(--maka-control-unit)),calc(0.00000 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  20.00000% { opacity: 0.84375; transform: translate(calc(10.56843 * var(--maka-control-unit)),calc(-2.95773 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  40.00000% { opacity: 0.50000; transform: translate(calc(37.79328 * var(--maka-control-unit)),calc(-10.62520 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  60.00000% { opacity: 0.15625; transform: translate(calc(74.95392 * var(--maka-control-unit)),calc(-21.19381 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  80.00000% { opacity: 0.00000; transform: translate(calc(115.32971 * var(--maka-control-unit)),calc(-32.85494 * var(--maka-control-unit) * var(--feature-y-factor))); }
+  100.00000% { opacity: 0.00000; transform: translate(calc(152.20000 * var(--maka-control-unit)),calc(-43.80000 * var(--maka-control-unit) * var(--feature-y-factor))); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .maka-quick-settings .maka-control-art { animation: none; }
+  .maka-quick-settings.is-closing { visibility: hidden; }
+}

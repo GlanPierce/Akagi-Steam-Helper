@@ -4,6 +4,7 @@ import { create } from 'zustand'
 // they don't affect any backend behavior. Sidebar collapsed/hover state lives
 // in `useSidebar` (own zustand+persist store ported from shadcn-ui-sidebar).
 const SCALE_KEY = 'akagi.ui.scale'
+const MODEL_FAVORITES_KEY = 'akagi.ui.modelFavorites'
 
 // One-time flag: has the user seen the dashboard onboarding hint (drag /
 // resize / remove / add tiles)? Deliberately NOT reset by "Reset Layout" —
@@ -54,7 +55,18 @@ function storeFlag(key: string) {
   }
 }
 
+function loadModelFavorites(): string[] {
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem(MODEL_FAVORITES_KEY) ?? '[]')
+    return Array.isArray(stored) ? [...new Set(stored.filter((name): name is string => typeof name === 'string' && name.length > 0))] : []
+  } catch {
+    return []
+  }
+}
+
 type UiPrefsStore = {
+  favoriteModels: string[]
+  toggleFavoriteModel: (name: string) => void
   scale: number
   setScale: (v: number) => void
   resetScale: () => void
@@ -67,6 +79,15 @@ type UiPrefsStore = {
 }
 
 export const useUiPrefsStore = create<UiPrefsStore>((set) => ({
+  favoriteModels: loadModelFavorites(),
+  toggleFavoriteModel: name => set(state => {
+    const favoriteModels = state.favoriteModels.includes(name)
+      ? state.favoriteModels.filter(model => model !== name)
+      : [...state.favoriteModels, name]
+    try { localStorage.setItem(MODEL_FAVORITES_KEY, JSON.stringify(favoriteModels)) }
+    catch { /* Keep this session's favorites if storage is unavailable. */ }
+    return { favoriteModels }
+  }),
   scale: loadScale(),
   setScale: (v) => {
     const scale = clampScale(v)

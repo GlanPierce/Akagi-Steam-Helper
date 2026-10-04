@@ -1,0 +1,124 @@
+/* Generated from original UI_LiaosheSelect_in/out at 60 Hz. */
+@keyframes maka-menu-fade-in {
+  0.000000% { opacity: 0; }
+  5.000000% { opacity: 0.007966; }
+  10.000000% { opacity: 0.030765; }
+  15.000000% { opacity: 0.066748; }
+  20.000000% { opacity: 0.114269; }
+  25.000000% { opacity: 0.171678; }
+  30.000000% { opacity: 0.237328; }
+  35.000000% { opacity: 0.30957; }
+  40.000000% { opacity: 0.386756; }
+  45.000000% { opacity: 0.467239; }
+  50.000000% { opacity: 0.54937; }
+  55.000000% { opacity: 0.631501; }
+  60.000000% { opacity: 0.711983; }
+  65.000000% { opacity: 0.78917; }
+  70.000000% { opacity: 0.861412; }
+  75.000000% { opacity: 0.927062; }
+  80.000000% { opacity: 0.984471; }
+  85.000000% { opacity: 1; }
+  90.000000% { opacity: 1; }
+  95.000000% { opacity: 1; }
+  100.000000% { opacity: 1; }
+}
+@keyframes maka-menu-slide-in {
+  0.000000% { translate: 173.0px 0; }
+  5.000000% { translate: 172.680924px 0; }
+  10.000000% { translate: 169.83465px 0; }
+  15.000000% { translate: 164.736221px 0; }
+  20.000000% { translate: 157.660681px 0; }
+  25.000000% { translate: 148.883072px 0; }
+  30.000000% { translate: 138.678438px 0; }
+  35.000000% { translate: 127.321821px 0; }
+  40.000000% { translate: 115.088266px 0; }
+  45.000000% { translate: 102.252813px 0; }
+  50.000000% { translate: 89.090508px 0; }
+  55.000000% { translate: 75.876393px 0; }
+  60.000000% { translate: 62.88551px 0; }
+  65.000000% { translate: 50.392904px 0; }
+  70.000000% { translate: 38.673617px 0; }
+  75.000000% { translate: 28.002692px 0; }
+  80.000000% { translate: 18.655172px 0; }
+  85.000000% { translate: 10.9061px 0; }
+  90.000000% { translate: 5.03052px 0; }
+  95.000000% { translate: 1.303475px 0; }
+  100.000000% { translate: 0.0px 0; }
+}
+@keyframes maka-menu-page-in {
+  0.000000% { opacity: 0; translate: 173.0px 0; }
+  5.000000% { opacity: 0.007966; translate: 172.680924px 0; }
+  10.000000% { opacity: 0.030765; translate: 169.83465px 0; }
+  15.000000% { opacity: 0.066748; translate: 164.736221px 0; }
+  20.000000% { opacity: 0.114269; translate: 157.660681px 0; }
+  25.000000% { opacity: 0.171678; translate: 148.883072px 0; }
+  30.000000% { opacity: 0.237328; translate: 138.678438px 0; }
+  35.000000% { opacity: 0.30957; translate: 127.321821px 0; }
+  40.000000% { opacity: 0.386756; translate: 115.088266px 0; }
+  45.000000% { opacity: 0.467239; translate: 102.252813px 0; }
+  50.000000% { opacity: 0.54937; translate: 89.090508px 0; }
+  55.000000% { opacity: 0.631501; translate: 75.876393px 0; }
+  60.000000% { opacity: 0.711983; translate: 62.88551px 0; }
+  65.000000% { opacity: 0.78917; translate: 50.392904px 0; }
+  70.000000% { opacity: 0.861412; translate: 38.673617px 0; }
+  75.000000% { opacity: 0.927062; translate: 28.002692px 0; }
+  80.000000% { opacity: 0.984471; translate: 18.655172px 0; }
+  85.000000% { opacity: 1; translate: 10.9061px 0; }
+  90.000000% { opacity: 1; translate: 5.03052px 0; }
+  95.000000% { opacity: 1; translate: 1.303475px 0; }
+  100.000000% { opacity: 1; translate: 0.0px 0; }
+}
+@keyframes maka-menu-fade-out {
+  0.000000% { opacity: 1; }
+  6.666667% { opacity: 0.972; }
+  13.333333% { opacity: 0.896; }
+  20.000000% { opacity: 0.784; }
+  26.666667% { opacity: 0.648; }
+  33.333333% { opacity: 0.5; }
+  40.000000% { opacity: 0.352; }
+  46.666667% { opacity: 0.216; }
+  53.333333% { opacity: 0.104; }
+  60.000000% { opacity: 0.028; }
+  66.666667% { opacity: 0; }
+  73.333333% { opacity: 0; }
+  80.000000% { opacity: 0; }
+  86.666667% { opacity: 0; }
+  93.333333% { opacity: 0; }
+  100.000000% { opacity: 0; }
+}
+@keyframes maka-menu-slide-out {
+  0.000000% { translate: 0.0px 0; }
+  6.666667% { translate: 1.821926px 0; }
+  13.333333% { translate: 6.948741px 0; }
+  20.000000% { translate: 14.872px 0; }
+  26.666667% { translate: 25.083259px 0; }
+  33.333333% { translate: 37.074074px 0; }
+  40.000000% { translate: 50.336px 0; }
+  46.666667% { translate: 64.360593px 0; }
+  53.333333% { translate: 78.639407px 0; }
+  60.000000% { translate: 92.664px 0; }
+  66.666667% { translate: 105.925926px 0; }
+  73.333333% { translate: 117.916741px 0; }
+  80.000000% { translate: 128.128px 0; }
+  86.666667% { translate: 136.051259px 0; }
+  93.333333% { translate: 141.178074px 0; }
+  100.000000% { translate: 143.0px 0; }
+}
+@keyframes maka-menu-page-out {
+  0.000000% { opacity: 1; translate: 0.0px 0; }
+  6.666667% { opacity: 0.972; translate: 1.821926px 0; }
+  13.333333% { opacity: 0.896; translate: 6.948741px 0; }
+  20.000000% { opacity: 0.784; translate: 14.872px 0; }
+  26.666667% { opacity: 0.648; translate: 25.083259px 0; }
+  33.333333% { opacity: 0.5; translate: 37.074074px 0; }
+  40.000000% { opacity: 0.352; translate: 50.336px 0; }
+  46.666667% { opacity: 0.216; translate: 64.360593px 0; }
+  53.333333% { opacity: 0.104; translate: 78.639407px 0; }
+  60.000000% { opacity: 0.028; translate: 92.664px 0; }
+  66.666667% { opacity: 0; translate: 105.925926px 0; }
+  73.333333% { opacity: 0; translate: 117.916741px 0; }
+  80.000000% { opacity: 0; translate: 128.128px 0; }
+  86.666667% { opacity: 0; translate: 136.051259px 0; }
+  93.333333% { opacity: 0; translate: 141.178074px 0; }
+  100.000000% { opacity: 0; translate: 143.0px 0; }
+}

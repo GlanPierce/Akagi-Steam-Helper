@@ -140,6 +140,8 @@ pub struct OpponentRisk {
 /// Top-level analysis output.
 #[derive(Debug, Clone, Serialize)]
 pub struct AnalysisResult {
+    /// State revision analyzed, zero for standalone algorithm callers.
+    pub revision: u64,
     pub seat: u8,
     pub turn: u8,
     pub shanten: i8,

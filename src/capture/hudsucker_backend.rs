@@ -53,9 +53,9 @@ impl CaptureBackend for HudsuckerBackend {
             Some(ctx.mjai_bus),
             Some(ctx.notify_bus),
             self.force_close,
-            // Riichi City autoplay injects frames through the relay; other
-            // platforms ignore the channel (their autoplay clicks a page).
-            ctx.autoplay.as_ref().map(|a| a.inject.clone()),
+            // Steam Majsoul needs the live clock and input receipts even though
+            // it has no browser Page. Riichi City also uses the inject bus.
+            ctx.autoplay,
             shutdown_fut,
         )
         .await

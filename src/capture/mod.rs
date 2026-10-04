@@ -86,7 +86,8 @@ pub struct CaptureCtx {
     /// Shared with the autoplay manager. The chromium backend writes the
     /// per-tab `Page` handle here when it observes a Majsoul WS;
     /// autoplay reads it to dispatch `Input.dispatchMouseEvent`. The
-    /// MITM backend simply ignores this — it has no `Page`.
+    /// MITM backend wires protocol clocks and input receipts for Steam, plus
+    /// the Riichi City injection bus; it never fills the browser `Page`.
     pub autoplay: Option<Arc<AutoplayContext>>,
     /// What to record of the HTTP traffic this backend intercepts. Both
     /// backends honour it; `static_assets` is chromium-only.

@@ -1,0 +1,33 @@
+import { act, renderHook } from '@testing-library/react'
+import { afterEach, expect, it, vi } from 'vitest'
+import { useActionEntrance } from './useActionEntrance'
+afterEach(() => vi.useRealTimers())
+it('waits for slide-in only once per prompt and cancels a prompt that disappears', () => {
+  vi.useFakeTimers()
+  const {result,rerender} = renderHook(({key}) => useActionEntrance(key),{initialProps:{key:'turn12:pon'}})
+  expect(result.current).toBe(false)
+  act(() => vi.advanceTimersByTime(459))
+  expect(result.current).toBe(false)
+  act(() => vi.advanceTimersByTime(1))
+  expect(result.current).toBe(true)
+  rerender({key:'turn12:pon'})
+  expect(result.current).toBe(true)
+  rerender({key:'turn13:chi'})
+  expect(result.current).toBe(false)
+  rerender({key:''})
+  act(() => vi.advanceTimersByTime(1000))
+  expect(result.current).toBe(false)
+})
+it('restarts the delay after guidance is hidden and shown for the same prompt', () => {
+  vi.useFakeTimers()
+  const first = renderHook(() => useActionEntrance('turn12:pon'))
+  act(() => vi.advanceTimersByTime(460))
+  expect(first.result.current).toBe(true)
+  first.unmount()
+  const resumed = renderHook(() => useActionEntrance('turn12:pon'))
+  expect(resumed.result.current).toBe(false)
+  act(() => vi.advanceTimersByTime(459))
+  expect(resumed.result.current).toBe(false)
+  act(() => vi.advanceTimersByTime(1))
+  expect(resumed.result.current).toBe(true)
+})

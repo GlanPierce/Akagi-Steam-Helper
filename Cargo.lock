@@ -19,7 +19,7 @@ dependencies = [
 
 [[package]]
 name = "akagi"
-version = "3.7.1"
+version = "0.0.1-alpha.20261004"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -72,6 +72,7 @@ dependencies = [
  "tracing-subscriber",
  "ulid",
  "which",
+ "windows-sys 0.61.2",
  "x509-parser",
  "zip 8.6.0",
 ]

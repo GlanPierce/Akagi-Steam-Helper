@@ -1,3 +1,5 @@
+> 本文件保留 Akagi 上游说明。Steam 适配版请先阅读[仓库首页](README.md)和[来源说明](THIRD_PARTY_NOTICES.md)。
+
 <!-- markdownlint-disable MD033 MD041 -->
 
 <br/>

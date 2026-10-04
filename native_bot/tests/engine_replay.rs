@@ -60,6 +60,11 @@ fn decides_a_legal_discard_after_tsumo() {
     );
     assert_eq!(decision.logits.len(), 82);
     assert!(
+        decision.candidates.len() > 3,
+        "the table HUD needs the whole legal policy"
+    );
+    assert!((decision.candidates.iter().map(|(_, p)| p).sum::<f32>() - 1.0).abs() < 1e-5);
+    assert!(
         decision.logits.iter().all(|v| v.is_finite()),
         "logits finite"
     );

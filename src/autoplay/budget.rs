@@ -53,6 +53,9 @@ pub struct TimeBudget {
     /// latency is already inside the frame arrival time, so this is the
     /// closest observable point to "server started the clock".
     pub opened_at: Instant,
+    /// Local commit time, never backdated by GameRestore's elapsed clock.
+    /// Used to distinguish an input for this window from the prior turn.
+    pub observed_at: Instant,
     /// Which action carried the operation list.
     pub source: BudgetSource,
 }

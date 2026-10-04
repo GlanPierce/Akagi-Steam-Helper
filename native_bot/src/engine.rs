@@ -24,9 +24,8 @@ use crate::adapt::{obs_and_legal_3p, obs_and_legal_4p};
 use crate::mjai_compat::{parse_line, sanitize_3p};
 use crate::model::Model;
 
-/// How many ranked candidates the engine surfaces for the HUD's multi-row
-/// recommendation card (top-N by policy probability).
-const SHOW_TOP_N: usize = 3;
+/// Export the full policy; presentation alone decides how many rows to show.
+const POLICY_LIMIT: usize = 82;
 
 /// A schema-agnostic bot reply, ready to be mapped to Akagi's `MjaiEvent`.
 /// All tiles are mjai strings (e.g. `"5mr"`, `"P"`).
@@ -226,11 +225,10 @@ impl Engine {
                 if legal.is_empty() {
                     return Ok(None);
                 }
-                // Forced ⇔ the *legal* set is a singleton — `ranked` is cut to
-                // SHOW_TOP_N below, so its length can't be used for this.
+                // Forced refers to the physical legal set before deduplication.
                 let forced = legal.len() == 1;
                 let logits = model.forward_logits(&obs)?;
-                let ranked = rank_by_logits(&legal, &logits, 4, SHOW_TOP_N);
+                let ranked = rank_by_logits(&legal, &logits, 4, POLICY_LIMIT);
                 let Some((top, _)) = ranked.first() else {
                     return Ok(None);
                 };
@@ -250,7 +248,7 @@ impl Engine {
                 }
                 let forced = legal.len() == 1;
                 let logits = model.forward_logits(&obs)?;
-                let ranked = rank_by_logits(&legal, &logits, 3, SHOW_TOP_N);
+                let ranked = rank_by_logits(&legal, &logits, 3, POLICY_LIMIT);
                 let Some((top, _)) = ranked.first() else {
                     return Ok(None);
                 };

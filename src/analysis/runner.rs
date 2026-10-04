@@ -60,11 +60,17 @@ async fn run(
                 // Snapshot the game state. Tracker has already digested the
                 // event (post-tracker bus ordering) and captured our seat
                 // from any `start_game.id`.
-                let snap = {
+                let (snap, revision) = {
                     let t = tracker.lock().await;
-                    t.snapshot()
+                    (
+                        if t.round_active { t.snapshot() } else { None },
+                        t.events_seen,
+                    )
                 };
-                let Some(snap) = snap else { continue };
+                let Some(snap) = snap else {
+                    *cache.write().await = None;
+                    continue;
+                };
                 let Some(seat) = snap.our_seat else { continue };
 
                 // Build PlayerInfo34. Some snapshot states are intermediate
@@ -95,7 +101,8 @@ async fn run(
                     continue;
                 }
 
-                let result = super::analyze(&info);
+                let mut result = super::analyze(&info);
+                result.revision = revision;
                 {
                     let mut c = cache.write().await;
                     *c = Some(result.clone());

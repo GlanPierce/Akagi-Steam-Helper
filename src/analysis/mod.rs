@@ -77,6 +77,7 @@ pub fn analyze(info: &PlayerInfo34) -> AnalysisResult {
     let best_defence = best_defence_idx.map(|i| Tile34(i).to_mjai().to_string());
 
     AnalysisResult {
+        revision: 0,
         seat: info.seat,
         turn: info.turn,
         shanten: s,

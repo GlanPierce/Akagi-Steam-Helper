@@ -69,6 +69,7 @@ pub mod riichi_city;
 pub mod tenhou;
 pub mod tenhou_state;
 pub mod verify;
+pub mod steam;
 
 pub use budget::{BudgetSource, SharedTimeBudget, TimeBudget};
 pub use context::{AutoplayContext, CanvasRect};

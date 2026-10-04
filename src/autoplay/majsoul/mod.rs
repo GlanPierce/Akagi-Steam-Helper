@@ -406,7 +406,20 @@ fn plan_dahai_click(pai: &str, ctx: &ActionContext) -> Option<Step> {
 
     if has_tsumohai {
         let t = tsumohai.unwrap();
-        if pai == t {
+        // Equal tile faces may occupy both the rack and the draw slot. Keep
+        // an explicit tedashi on the rack when that copy is available.
+        let keep_draw = matches!(
+            ctx.action,
+            MjaiEvent::Dahai {
+                tsumogiri: false,
+                ..
+            }
+        ) && sorted_tehai
+            .iter()
+            .filter(|tile| tile.as_str() == t)
+            .count()
+            > 1;
+        if pai == t && !keep_draw {
             // Discarding the tsumohai: click the far-right tsumohai slot.
             let (x, y) = get_pai_coord(13, tehai.len() - 1);
             return Some(Step::Click {
@@ -869,6 +882,35 @@ mod tests {
                 );
             }
             _ => panic!("second step should be a click"),
+        }
+    }
+
+    #[test]
+    fn duplicate_draw_obeys_the_requested_discard_source() {
+        let mut snap = snapshot_with_oya(
+            0,
+            1,
+            vec![
+                "1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m", "1p", "2p", "3p", "5p", "5p",
+            ],
+        );
+        snap.players[0].drawn_tile = Some("5p".into());
+        let cfg_ref = cfg();
+        for (tsumogiri, expected_x) in [(false, TILES[12].0), (true, TILES[13].0 + TSUMO_SPACE)] {
+            let action = MjaiEvent::Dahai {
+                actor: 0,
+                pai: "5p".into(),
+                tsumogiri,
+            };
+            let ctx = ctx_for(&action, &snap, &[], None, Some("5p"), false, &cfg_ref);
+            let result = MajsoulAutoplay::new().plan(&ctx);
+            let Some(Step::Click { x_norm, .. }) = result.steps.last() else {
+                panic!("expected a discard click")
+            };
+            assert!(
+                (x_norm - expected_x).abs() < 1e-9,
+                "tsumogiri={tsumogiri}: expected {expected_x}, got {x_norm}"
+            );
         }
     }
 

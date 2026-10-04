@@ -10,10 +10,26 @@ pub const TOP_N_MAX: usize = 5;
 pub const OPACITY_MIN: f64 = 0.3;
 pub const OPACITY_MAX: f64 = 1.0;
 
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OverlayFeature {
+    ShowDiscards,
+    ShowActions,
+    ShowAnalysis,
+    ShowRisk,
+}
+
 /// The always-on-top suggestion overlay ("PiP") window.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct OverlayConfig {
+    /// Steam game-sized HUD; the original card remains available elsewhere.
+    pub immersive: bool,
+    pub show_analysis: bool,
+    pub show_risk: bool,
+    pub show_discards: bool,
+    pub show_actions: bool,
+    pub calibration: OverlayCalibration,
     /// Open the overlay window. On by default — the suggestions are the point
     /// of the app, and having to go find a setting to see them over the game is
     /// a worse first run than one extra window you can close with its × button.
@@ -32,6 +48,12 @@ pub struct OverlayConfig {
 impl Default for OverlayConfig {
     fn default() -> Self {
         Self {
+            immersive: false,
+            show_analysis: true,
+            show_risk: true,
+            show_discards: true,
+            show_actions: true,
+            calibration: OverlayCalibration::default(),
             enabled: true,
             top_n: 3,
             opacity: 0.95,
@@ -40,7 +62,54 @@ impl Default for OverlayConfig {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct OverlayCalibration {
+    pub x: f64,
+    pub y: f64,
+    pub scale: f64,
+    pub hand_y: f64,
+    pub button_y: f64,
+}
+impl Default for OverlayCalibration {
+    fn default() -> Self {
+        Self {
+            x: 0.0,
+            y: 0.0,
+            scale: 1.0,
+            hand_y: 0.0,
+            button_y: 0.0,
+        }
+    }
+}
+impl OverlayCalibration {
+    pub fn clamped(&self) -> Self {
+        fn limit(v: f64, low: f64, high: f64, fallback: f64) -> f64 {
+            if v.is_finite() {
+                v.clamp(low, high)
+            } else {
+                fallback
+            }
+        }
+        Self {
+            x: limit(self.x, -2.0, 2.0, 0.0),
+            y: limit(self.y, -2.0, 2.0, 0.0),
+            scale: limit(self.scale, 0.8, 1.2, 1.0),
+            hand_y: limit(self.hand_y, -1.0, 1.0, 0.0),
+            button_y: limit(self.button_y, -1.0, 1.0, 0.0),
+        }
+    }
+}
+
 impl OverlayConfig {
+    pub fn set_feature(&mut self, feature: OverlayFeature, enabled: bool) {
+        match feature {
+            OverlayFeature::ShowDiscards => self.show_discards = enabled,
+            OverlayFeature::ShowActions => self.show_actions = enabled,
+            OverlayFeature::ShowAnalysis => self.show_analysis = enabled,
+            OverlayFeature::ShowRisk => self.show_risk = enabled,
+        }
+    }
     /// `top_n` clamped into [`TOP_N_MIN`, `TOP_N_MAX`].
     ///
     /// The frontend picks from a bounded control, but `config.toml` is a
@@ -63,6 +132,37 @@ impl OverlayConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ingame_startup_preserves_preferences_without_mutating_saved_config() {
+        let saved = OverlayConfig { enabled: false, immersive: false, show_actions: false, opacity: 0.7,
+            calibration: OverlayCalibration { x: 0.2, ..Default::default() }, ..Default::default() };
+        let mut config = super::super::AppConfig { overlay: saved.clone(), ..Default::default() };
+        config.bot.enabled = false;
+        config.bot.active_4p = "local-four".into();
+        config.bot.active_3p = "local-three".into();
+        let current = config.for_ingame();
+        assert!(current.overlay.enabled && current.overlay.immersive && current.bot.enabled);
+        assert!(!current.overlay.show_actions);
+        assert_eq!(current.overlay.opacity, 0.7);
+        assert_eq!(current.overlay.calibration, saved.calibration);
+        assert_eq!(current.bot.active_4p, config.bot.active_4p);
+        assert_eq!(current.bot.active_3p, config.bot.active_3p);
+        assert!(!config.bot.enabled);
+        assert!(!saved.enabled && !saved.immersive);
+    }
+
+    #[test]
+    fn successive_feature_patches_preserve_other_settings() {
+        let mut cfg = OverlayConfig::default();
+        cfg.calibration.x = 0.3;
+        cfg.set_feature(OverlayFeature::ShowDiscards, false);
+        cfg.set_feature(OverlayFeature::ShowActions, false);
+        cfg.set_feature(OverlayFeature::ShowRisk, false);
+        assert!(!cfg.show_discards && !cfg.show_actions && !cfg.show_risk);
+        assert!(cfg.show_analysis);
+        assert_eq!(cfg.calibration.x, 0.3);
+    }
 
     #[test]
     fn defaults_are_an_open_three_row_overlay() {
@@ -128,6 +228,10 @@ mod tests {
         cfg.overlay.top_n = 5;
         cfg.overlay.opacity = 0.6;
         cfg.overlay.always_on_top = false;
+        cfg.overlay.show_discards = false;
+        cfg.overlay.show_actions = false;
+        cfg.overlay.show_analysis = false;
+        cfg.overlay.show_risk = false;
 
         let body = toml::to_string_pretty(&cfg).unwrap();
         assert!(body.contains("[overlay]"), "expected [overlay] in:\n{body}");

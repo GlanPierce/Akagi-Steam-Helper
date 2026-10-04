@@ -55,9 +55,11 @@ pub type AnalysisBus = broadcast::Sender<AnalysisResult>;
 /// otherwise ask a tracker that has moved on, and get the answer for a
 /// later event than the one it is holding. One frame can carry several
 /// seats' actions, so that is not a rare race — it is most of them.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct TrackedEvent {
     pub event: MjaiEvent,
+    /// Process-monotonic state revision captured when the event was applied.
+    pub revision: u64,
     /// Whether the riichi engine offers our seat a choice in the state this
     /// event produced — its own turn, or a claim on someone's discard.
     ///
