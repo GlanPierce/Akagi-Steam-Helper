@@ -98,11 +98,6 @@
 .hud-hotkeys h3 { font-size: 28px; color: #d5ad6f; margin: 0 0 10px; }
 .hud-calibration-page .hud-hotkeys p { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 20px; font-size: 24px; margin: 8px 0 0; }
 
-.hud-model-import { margin: 0 0 28px; }
-.hud-model-import p { font-size: 24px; margin: 6px 0 16px; color: #c2b39d; }
-.hud-import-file { display: flex; gap: 24px; align-items: flex-end; margin-top: 18px; }
-.hud-import-file label { flex: 1; min-width: 0; display: grid; gap: 8px; font-size: 24px; }
-.hud-import-file input { width: 100%; user-select: text; }
 .hud-local-error { color: #edac98; font-size: 24px; overflow-wrap: anywhere; margin: 16px 0; }
 .hud-local-status { overflow-wrap: anywhere; }
 
@@ -111,9 +106,11 @@
 /* The current game runs scripted DOTween tracks, not its disabled Animator.
    Menu entry/exit animate top and heads; tab changes fade only page contents. */
 .maka-menu-transition { position: absolute; inset: 0; }
+.maka-menu-transition .maka-menu-shade { animation: maka-menu-page-in var(--menu-enter-time) var(--menu-ease) both; }
 .maka-menu-transition .hud-drawer-header { animation: maka-menu-header-in var(--menu-enter-time) var(--menu-ease) both; }
 .maka-menu-transition .maka-menu-panel { animation: maka-menu-panel-in var(--menu-enter-time) var(--menu-ease) both; }
 .maka-menu-transition.is-closing { pointer-events: none; }
+.maka-menu-transition.is-closing .maka-menu-shade { animation: maka-menu-page-out var(--menu-exit-time) var(--menu-ease) both; }
 .maka-menu-transition.is-closing .hud-drawer-header { animation: maka-menu-header-out var(--menu-exit-time) var(--menu-ease) both; }
 .maka-menu-transition.is-closing .maka-menu-panel { animation: maka-menu-panel-out var(--menu-exit-time) var(--menu-ease) both; }
 .maka-menu-transition.is-closing * { pointer-events: none; }
@@ -121,5 +118,5 @@
 .hud-menu-page[data-menu-phase=out] { animation: maka-menu-page-out var(--page-exit-time) var(--menu-ease) both; }
 @media (prefers-reduced-motion: reduce) {
   .maka-menu-panel { transition: none; }
-  .maka-menu-transition, .maka-menu-transition .maka-menu-panel, .maka-menu-transition .hud-drawer-header, .hud-menu-page[data-menu-phase] { animation: none; }
+  .maka-menu-transition, .maka-menu-transition .maka-menu-shade, .maka-menu-transition .maka-menu-panel, .maka-menu-transition .hud-drawer-header, .hud-menu-page[data-menu-phase] { animation: none; }
 }

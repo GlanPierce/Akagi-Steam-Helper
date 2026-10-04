@@ -77,7 +77,7 @@
 .maka-state-label { display: grid; place-items: center; }
 .maka-state-label > span { position: relative; }
 .maka-state.is-enabled { color: #f3d765; }
-.maka-menu-shade { position: absolute; inset: 0; pointer-events: auto; }
+.maka-menu-shade { position: absolute; inset: 0; background: rgba(0, 0, 0, .5); pointer-events: auto; }
 .hud-drawer { --skin-scale: 1; position: absolute; left: 0; top: 0; transform-origin: top left; pointer-events: auto; color: #e9dfcf; font-size: 28px; }
 /* UI_LiaosheSelect/top: original banner and return art, without stretching. */
 .hud-drawer-header { position: absolute; left: 0; top: 0; width: 520px; height: 154px; }
@@ -102,8 +102,8 @@
 .hud-drawer-tabs a:is(:hover, :focus-visible) { filter: brightness(.960784); }
 .hud-drawer-tabs a:active { filter: brightness(.784314); }
 .maka-menu-body { position: relative; flex: 1; min-height: 0; display: flex; padding: 46px; }
-/* One native canvas draws heads/bg and heads/bound in order. No second shade
-   or backdrop image: the live game remains visible through the 2/3 black fill. */
+/* One native canvas draws heads/bg and heads/bound in order. The live game
+   remains visible through this fill and the full-menu backdrop behind it. */
 .hud-drawer-content { position: relative; overflow-x: hidden; overflow-y: auto; overflow-anchor: none; min-height: 0; min-width: 0; flex: 1; }
 .hud-menu-page { display: flow-root; }
 .hud-analysis-page, .hud-calibration-page { padding: 22px 26px; }

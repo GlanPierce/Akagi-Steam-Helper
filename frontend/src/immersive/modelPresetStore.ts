@@ -18,7 +18,7 @@ export const useModelPresetStore = create<{
   error: '',
   run: async (command, args) => {
     const operation = useModelImportStore.getState()
-    if (operation.selecting || operation.busy || !useConfigStore.getState().config) return false
+    if (operation.selecting || operation.busy || operation.picking || !useConfigStore.getState().config) return false
     revision++
     useModelImportStore.setState({ selecting: true })
     set({ error: '' })

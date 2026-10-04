@@ -37,6 +37,8 @@ export function LocalModels({ scale = 1 }: { scale?: number }) {
   const config = useConfigStore(s => s.config)
   const selecting = useModelImportStore(s => s.selecting)
   const installing = useModelImportStore(s => s.busy)
+  const picking = useModelImportStore(s => s.picking)
+  const chooseAndImport = useModelImportStore(s => s.chooseAndImport)
   const error = useModelPresetStore(s => s.error)
   const favorites = useUiPrefsStore(s => s.favoriteModels)
   const toggleFavorite = useUiPrefsStore(s => s.toggleFavoriteModel)
@@ -44,7 +46,6 @@ export function LocalModels({ scale = 1 }: { scale?: number }) {
   const [viewedIndex, setViewedIndex] = useState<number | null>(null)
   const [mode, setMode] = useState<ModelMode>('4p')
   const [previews, setPreviews] = useState<Record<string, { name: string; assigned: string }>>({})
-  const [importOpen, setImportOpen] = useState(false)
   const index = viewedIndex ?? activeIndex
   const preset = presets[index]
   const models = cached.length ? cached : builtins
@@ -53,7 +54,7 @@ export function LocalModels({ scale = 1 }: { scale?: number }) {
   const preview = entry?.assigned === assigned ? entry.name : assigned
   const choices = models.filter(bot => supports(bot, mode))
   const selected = choices.some(bot => bot.name === preview) ? preview : assigned
-  const locked = !config || selecting || installing
+  const locked = !config || selecting || installing || picking
 
   useEffect(() => { void loadModelConfiguration() }, [])
   useEffect(() => {
@@ -69,7 +70,7 @@ export function LocalModels({ scale = 1 }: { scale?: number }) {
 
   const select = (name: string) => {
     const state = useModelImportStore.getState()
-    if (!config || state.selecting || state.busy) return
+    if (!config || state.selecting || state.busy || state.picking) return
     if (selected !== name) setPreviews(current => ({ ...current, [`${index}:${mode}`]: { name, assigned } }))
     else if (assigned !== name) void useModelPresetStore.getState().run('set_model_preset', { index, mode, name })
   }
@@ -105,10 +106,10 @@ export function LocalModels({ scale = 1 }: { scale?: number }) {
     <section className="hud-preset-preview" aria-label={`${modeName(mode)}模型`}>
       <NativeSprite src="/maka/character/bf_popout.png" border={[17, 19, 18, 18]} pixelScale={scale} />
       <h3 className="hud-preset-preview-title">{modeTitle(mode)}</h3>
-      <button className="hud-preset-import" type="button" data-native-press-scale aria-label="导入模型" title="导入模型" aria-expanded={importOpen} onClick={() => setImportOpen(open => !open)}><img src="/maka/lobby/add_1.png" alt="" /></button>
+      <button className="hud-preset-import" type="button" data-native-press-scale aria-label="导入模型" title="导入模型" disabled={locked} onClick={() => void chooseAndImport()}><img src="/maka/lobby/add_1.png" alt="" /></button>
       <img className="hud-preset-preview-line" src="/maka/character/line.png" alt="" />
       <div className="hud-preset-preview-content" key={`${index}:${mode}`}>
-        <ModelImport open={importOpen} disabled={selecting} />
+        <ModelImport />
         <div className="hud-model-list" role="group" aria-label={`${modeName(mode)}模型选择`}>
           <h4 className="hud-native-field-heading">已收藏</h4>
           <div className="hud-model-cards hud-model-favorites" role="radiogroup" aria-label="收藏模型">{starred.length ? starred : <div className="hud-model-empty"><img src="/maka/character/noinfo.png" alt="" /><span>空空如也</span></div>}</div>

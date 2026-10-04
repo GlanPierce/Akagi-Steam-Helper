@@ -44,18 +44,18 @@
 .hud-preset-preview { position: absolute; left: calc(50% - 38.64505px); top: 47.0587px; bottom: 61.7495px; width: 764.328613px; }
 .hud-preset-preview-title { position: absolute; left: 52.06429px; top: calc(50% - 380.6px); width: 437.48709px; height: 67.6px; padding: 0; margin: 0; display: flex; align-items: center; color: #e7ab5d; font: 38px/1 'Maka Brush', sans-serif; }
 .hud-preset-preview-line { position: absolute; left: 49.7943px; top: calc(50% - 309.36px); width: 667.44757px; height: 3.64px; }
-.hud-preset-import { position: absolute; left: 578.04226px; top: calc(50% - 364.976645px); width: 139.202103px; height: 39.088299px; display: grid; place-items: center; padding: 0; border: 0; background: none; }
-/* The requested original add_1 replaces star_btn in its 49-high control area;
-   keep the diamond's 84:85 ratio without a background behind it. */
-.hud-preset-import img { position: absolute; width: auto; height: 49px; pointer-events: none; }
+/* Align add_1's right edge with the header divider and its center with the
+   title's 67.6-high box, independently of the removed switch background. */
+.hud-preset-import { position: absolute; right: 47.086743px; top: calc(50% - 380.6px); width: 64px; height: 67.6px; display: flex; align-items: center; justify-content: flex-end; padding: 0; border: 0; background: none; }
+.hud-preset-import img { width: auto; height: 49px; pointer-events: none; }
 .hud-preset-preview-content { position: absolute; left: 42px; right: 24px; top: calc(50% - 289px); bottom: 20px; overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; overflow-anchor: none; }
 .hud-preset-preview .hud-model-list { overflow: visible; }
 .hud-preset-preview .hud-model-favorites { min-height: 252px; }
 .hud-preset-preview .hud-model-divider { margin: 4px 0 12px; }
 .hud-preset-preview .hud-model-divider img { width: 566px; max-width: 100%; height: auto; margin-inline: auto; object-fit: contain; }
-.hud-preset-preview .hud-model-import { margin: 8px 8px 18px 0; padding: 18px; }
-.hud-preset-preview .hud-import-file { flex-wrap: wrap; }
-.hud-preset-page .hud-menu-footer { position: absolute; left: 70px; right: 40px; bottom: 8px; padding: 0; }
+/* Keep the native 40-high version line between PagePreview and the frame's
+   inner bottom edge (17.5), with space around the actual text glyphs. */
+.hud-preset-page .hud-menu-footer { position: absolute; left: 70px; right: 56px; bottom: 20px; padding: 0; }
 .hud-preset-page .hud-menu-footer-actions { max-width: 660px; }
 .hud-preset-page .hud-local-status { font-size: 23px; line-height: 32px; }
 

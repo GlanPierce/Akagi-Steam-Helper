@@ -15,7 +15,7 @@ const config = {
 beforeEach(() => {
   invoke.mockReset()
   useModelPresetStore.setState({ error: '' })
-  useModelImportStore.setState({ selecting: false, busy: false })
+  useModelImportStore.setState({ selecting: false, busy: false, picking: false })
   useConfigStore.setState({ config })
   useBotStore.setState({ list: [] })
 })

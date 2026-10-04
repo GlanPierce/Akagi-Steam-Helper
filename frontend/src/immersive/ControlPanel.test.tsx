@@ -51,7 +51,7 @@ beforeEach(() => {
   invoke.mockReset()
   openFile.mockReset()
   useModelPresetStore.setState({ error: '' })
-  useModelImportStore.setState({ zipPath: '', name: '', busy: false, selecting: false, progress: '', error: '', message: '', warning: '' })
+  useModelImportStore.setState({ picking: false, busy: false, selecting: false, progress: '', error: '', message: '', warning: '' })
   invoke.mockImplementation((command: string, args?: { name: string }) => {
     if (command === 'list_bots') return Promise.resolve(bots)
     if (command === 'get_config') return Promise.resolve(config)
@@ -241,25 +241,27 @@ it('requires two clicks on the new card after changing the preview and keeps eac
   expect(screen.getByRole('radio', { name: '为三人局指定 内置三人模型' }).getAttribute('aria-checked')).toBe('true')
 })
 
-it('imports a picked ZIP, refreshes the list and leaves current model selection alone', async () => {
+it('opens the ZIP picker directly from the plus and imports with the filename as its default name', async () => {
   const imported = { name: 'local-pack', dir: 'C:/bots/local-pack', has_pyproject: true, env_ready: true }
+  let installed = false
   openFile.mockResolvedValue('C:/models/local-pack.zip')
   invoke.mockImplementation((command: string) => {
     if (command === 'get_config') return Promise.resolve(config)
-    if (command === 'list_bots') return Promise.resolve(bots)
-    if (command === 'install_bot_from_zip') return Promise.resolve(imported)
+    if (command === 'list_bots') return Promise.resolve(installed ? [...bots, imported] : bots)
+    if (command === 'install_bot_from_zip') { installed = true; return Promise.resolve(imported) }
     return Promise.resolve(undefined)
   })
   mount()
+  const plus = screen.getByRole('button', { name: '导入模型' }) as HTMLButtonElement
+  expect(plus.disabled).toBe(true)
+  fireEvent.click(plus)
+  expect(openFile).not.toHaveBeenCalled()
+  await waitFor(() => expect(plus.disabled).toBe(false))
   fireEvent.click(screen.getByRole('button', { name: '导入模型' }))
-  fireEvent.click(screen.getByRole('button', { name: '选择文件' }))
-  await waitFor(() => expect((screen.getByRole('textbox', { name: '模型 ZIP 文件' }) as HTMLInputElement).value).toBe('C:/models/local-pack.zip'))
-  invoke.mockImplementation((command: string) => {
-    if (command === 'list_bots') return Promise.resolve([...bots, imported])
-    if (command === 'install_bot_from_zip') return Promise.resolve(imported)
-    return Promise.resolve(config)
-  })
-  fireEvent.click(screen.getByRole('button', { name: '开始导入' }))
+  expect(openFile).toHaveBeenCalledWith({ multiple: false, directory: false, filters: [{ name: '模型 ZIP 包', extensions: ['zip'] }] })
+  expect(screen.queryByRole('region', { name: '导入本地模型' })).toBeNull()
+  expect(screen.queryByRole('textbox', { name: '模型 ZIP 文件' })).toBeNull()
+  expect(screen.queryByRole('textbox', { name: '安装名称（可选）' })).toBeNull()
   await waitFor(() => expect(invoke).toHaveBeenCalledWith('install_bot_from_zip', { zipPath: 'C:/models/local-pack.zip', name: undefined }))
   expect(await screen.findByRole('radio', { name: '为四人局指定 local-pack' })).toBeTruthy()
   expect(invoke.mock.calls.some(([command]) => command === 'set_model_preset')).toBe(false)
@@ -269,13 +271,33 @@ it('imports a picked ZIP, refreshes the list and leaves current model selection 
 it('cancelling the file picker does not install anything and picker errors remain visible', async () => {
   openFile.mockResolvedValueOnce(null).mockRejectedValueOnce(new Error('picker failed'))
   mount()
+  await waitFor(() => expect((screen.getByRole('button', { name: '导入模型' }) as HTMLButtonElement).disabled).toBe(false))
   fireEvent.click(screen.getByRole('button', { name: '导入模型' }))
-  fireEvent.click(screen.getByRole('button', { name: '选择文件' }))
   await waitFor(() => expect(openFile).toHaveBeenCalledTimes(1))
-  expect((screen.getByRole('button', { name: '开始导入' }) as HTMLButtonElement).disabled).toBe(true)
-  fireEvent.click(screen.getByRole('button', { name: '选择文件' }))
+  await waitFor(() => expect((screen.getByRole('button', { name: '导入模型' }) as HTMLButtonElement).disabled).toBe(false))
+  fireEvent.click(screen.getByRole('button', { name: '导入模型' }))
   expect((await screen.findByRole('alert')).textContent).toContain('picker failed')
   expect(invoke.mock.calls.some(([command]) => command === 'install_bot_from_zip')).toBe(false)
+})
+
+it('keeps a pending file picker across menu reopen and imports its result only once', async () => {
+  let finishPicker!: (path: string) => void
+  openFile.mockReturnValue(new Promise<string>(resolve => { finishPicker = resolve }))
+  const first = mount()
+  await waitFor(() => expect((screen.getByRole('button', { name: '导入模型' }) as HTMLButtonElement).disabled).toBe(false))
+  fireEvent.click(screen.getByRole('button', { name: '导入模型' }))
+  expect(openFile).toHaveBeenCalledTimes(1)
+  first.unmount()
+  mount()
+  const plus = screen.getByRole('button', { name: '导入模型' }) as HTMLButtonElement
+  expect(plus.disabled).toBe(true)
+  fireEvent.click(plus)
+  expect(openFile).toHaveBeenCalledTimes(1)
+  const imported = { name: 'picked', dir: '', has_pyproject: true, env_ready: true }
+  invoke.mockImplementation(command => Promise.resolve(command === 'install_bot_from_zip' ? imported : command === 'list_bots' ? [...bots, imported] : config))
+  await act(async () => { finishPicker('C:/models/picked.zip') })
+  await waitFor(() => expect(plus.disabled).toBe(false))
+  expect(invoke.mock.calls.filter(([command]) => command === 'install_bot_from_zip')).toEqual([['install_bot_from_zip', { zipPath: 'C:/models/picked.zip', name: undefined }]])
 })
 
 it('keeps imported models with missing dependencies visible so their environment can be prepared', async () => {
@@ -306,7 +328,8 @@ it('keeps selection pending across menu reopen so activation and installation ca
   mount()
   expect((await screen.findByRole('radio', { name: '为四人局指定 Mortal' }) as HTMLButtonElement).disabled).toBe(true)
   fireEvent.click(screen.getByRole('button', { name: '导入模型' }))
-  expect((screen.getByRole('button', { name: '选择文件' }) as HTMLButtonElement).disabled).toBe(true)
+  expect((screen.getByRole('button', { name: '导入模型' }) as HTMLButtonElement).disabled).toBe(true)
+  expect(openFile).not.toHaveBeenCalled()
   finish({ ...config.bot, active_4p: 'mortal' })
   await waitFor(() => expect(useModelImportStore.getState().selecting).toBe(false))
   expect(useConfigStore.getState().config?.bot.active_4p).toBe('mortal')
