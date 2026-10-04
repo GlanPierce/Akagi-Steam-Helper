@@ -113,9 +113,9 @@ export function LocalModels() {
               {active && <img className="hud-model-using" src="/maka/lobby_chs/using_1.png" alt="" />}
               <span className="hud-model-name" data-long={cardName(bot).length > 6}>{cardName(bot)}</span>
             </label>
-            <button className="hud-model-favorite" type="button" aria-label={`${favorite ? '取消收藏' : '收藏'} ${botLabel}`} title={favorite ? '取消收藏' : '收藏'} aria-pressed={favorite} onClick={() => toggleFavorite(bot.name)}>
+            {(selected || favorite) && <button className="hud-model-favorite" type="button" aria-label={`${favorite ? '取消收藏' : '收藏'} ${botLabel}`} title={favorite ? '取消收藏' : '收藏'} aria-pressed={favorite} onClick={() => toggleFavorite(bot.name)}>
               <img src={`/maka/dorm/sushe_card_normal_star_${favorite ? 'light' : 'dark'}.png`} alt="" />
-            </button>
+            </button>}
             {!ready && bot.has_pyproject && <button className="hud-local-button hud-model-install" data-native-press-scale disabled={busy || installing} aria-label={`为 ${botLabel} 安装环境`} onClick={() => void prepareEnvironment(bot.name)}>安装</button>}
           </div>
       }
