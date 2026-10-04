@@ -73,8 +73,8 @@ export function LocalModels({ scale = 1 }: { scale?: number }) {
     if (selected !== name) setPreviews(current => ({ ...current, [`${index}:${mode}`]: { name, assigned } }))
     else if (assigned !== name) void useModelPresetStore.getState().run('set_model_preset', { index, mode, name })
   }
-  const cards = (favorite: boolean) => choices.filter(bot => favorites.includes(bot.name) === favorite).map(bot => <ModelCard key={bot.name} bot={bot} mode={mode} selected={selected === bot.name} assigned={assigned === bot.name} favorite={favorite} disabled={locked} onSelect={() => select(bot.name)} onFavorite={() => toggleFavorite(bot.name)} />)
-  const starred = cards(true)
+  const cards = (group: 'favorites' | 'all') => choices.filter(bot => group === 'all' || favorites.includes(bot.name)).map(bot => <ModelCard key={bot.name} bot={bot} mode={mode} group={group} selected={selected === bot.name} assigned={assigned === bot.name} favorite={favorites.includes(bot.name)} disabled={locked} onSelect={() => select(bot.name)} onFavorite={() => toggleFavorite(bot.name)} />)
+  const starred = cards('favorites')
   const description = (choice: ModelPreset, row: ModelMode) => {
     const name = choice[modeKey(row)]
     const bot = models.find(bot => bot.name === name)
@@ -109,12 +109,12 @@ export function LocalModels({ scale = 1 }: { scale?: number }) {
       <img className="hud-preset-preview-line" src="/maka/character/line.png" alt="" />
       <div className="hud-preset-preview-content" key={`${index}:${mode}`}>
         <ModelImport open={importOpen} disabled={selecting} />
-        <div className="hud-model-list" role="radiogroup" aria-label={`${modeName(mode)}模型选择`}>
+        <div className="hud-model-list" role="group" aria-label={`${modeName(mode)}模型选择`}>
           <h4 className="hud-native-field-heading">已收藏</h4>
-          <div className="hud-model-cards hud-model-favorites" role="group" aria-label="收藏模型">{starred.length ? starred : <div className="hud-model-empty"><img src="/maka/character/noinfo.png" alt="" /><span>空空如也</span></div>}</div>
+          <div className="hud-model-cards hud-model-favorites" role="radiogroup" aria-label="收藏模型">{starred.length ? starred : <div className="hud-model-empty"><img src="/maka/character/noinfo.png" alt="" /><span>空空如也</span></div>}</div>
           <div className="hud-model-divider" role="separator"><img src="/maka/dorm/dividing_line.png" alt="" /></div>
-          <h4 className="hud-native-field-heading">未收藏</h4>
-          <div className="hud-model-cards" role="group" aria-label="未收藏模型">{cards(false)}</div>
+          <h4 className="hud-native-field-heading">所有模型</h4>
+          <div className="hud-model-cards" role="radiogroup" aria-label="所有模型">{cards('all')}</div>
         </div>
       </div>
     </section>

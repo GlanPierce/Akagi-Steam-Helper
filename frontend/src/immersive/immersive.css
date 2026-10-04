@@ -88,15 +88,16 @@
 .maka-menu-back .maka-control-art { transform-origin: 74px 73px; }
 .maka-menu-back img { position: absolute; left: 7px; top: 6px; width: 135px; height: 134px; object-fit: contain; }
 .hud-drawer kbd { display: inline-block; font: inherit; border: 5px solid transparent; border-image: url('/maka/character/bf_popout.png') 18 18 19 17 fill; padding: 0 3px; color: #e1cda9; }
-.maka-menu-panel { position: absolute; left: 288px; right: 48px; top: 146.8px; bottom: 41.2px; display: flex; }
+.maka-menu-panel { position: absolute; width: calc(100% - 336px); right: 48px; top: 146.8px; bottom: 41.2px; display: flex; transition: width var(--menu-frame-time) var(--menu-ease); }
+.maka-menu-panel[data-menu-layout=models] { width: 1584px; }
 /* Native 284 × 84 buttons overlap by 38.53006 px; their sprite sizes differ. */
 .hud-drawer-tabs { position: absolute; top: -80px; right: 45px; display: flex; align-items: end; gap: 0; height: 84px; z-index: 1; }
-.hud-drawer-tabs a { position: relative; flex: 0 0 284px; width: 284px; height: 84px; color: #dfb67a; text-decoration: none; transition: filter 100ms linear; }
+.hud-drawer-tabs a { position: relative; flex: 0 0 284px; width: 284px; height: 84px; color: #d3a86c; text-decoration: none; transition: filter 100ms linear; }
 .hud-drawer-tabs a + a { margin-left: -38.53006px; }
 .hud-drawer-tabs a img { position: absolute; bottom: 0; right: 0; width: 284px; height: 84px; object-fit: contain; }
 .hud-drawer-tabs a.active img { width: 284px; height: 84px; }
 .hud-drawer-tabs a span { position: absolute; left: 154.5px; top: 49.9px; width: 234px; height: 63.98px; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; font-family: 'Maka Brush', 'Maka Menu Text', sans-serif; font-size: 42px; line-height: 1; white-space: nowrap; }
-.hud-drawer-tabs a.active { color: #613422; z-index: 1; }
+.hud-drawer-tabs a.active { color: #552c1c; z-index: 1; }
 .hud-drawer-tabs a.active span { top: 47.7px; }
 .hud-drawer-tabs a:is(:hover, :focus-visible) { filter: brightness(.960784); }
 .hud-drawer-tabs a:active { filter: brightness(.784314); }

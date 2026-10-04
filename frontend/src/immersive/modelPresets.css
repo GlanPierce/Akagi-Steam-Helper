@@ -1,6 +1,5 @@
 /* UI_LiaosheSelect/heads/page_deco. RectTransform anchors are translated
    directly from the Steam prefab, in its 1920 x 1080 reference canvas. */
-.maka-menu-panel:has(.hud-preset-page) { left: auto; width: 1584px; }
 .maka-menu-body:has(.hud-preset-page) { padding: 0; }
 .hud-drawer-content:has(.hud-preset-page) { overflow: visible; }
 .hud-local-models.hud-preset-page { position: relative; display: block; height: 100%; padding: 0; }
@@ -45,9 +44,9 @@
 .hud-preset-preview { position: absolute; left: calc(50% - 38.64505px); top: 47.0587px; bottom: 61.7495px; width: 764.328613px; }
 .hud-preset-preview-title { position: absolute; left: 52.06429px; top: calc(50% - 380.6px); width: 437.48709px; height: 67.6px; padding: 0; margin: 0; display: flex; align-items: center; color: #e7ab5d; font: 38px/1 'Maka Brush', sans-serif; }
 .hud-preset-preview-line { position: absolute; left: 49.7943px; top: calc(50% - 309.36px); width: 667.44757px; height: 3.64px; }
-.hud-preset-import { position: absolute; left: 578.04226px; top: calc(50% - 364.976645px); width: 139.202103px; height: 39.088299px; display: grid; place-items: center; padding: 0; border: 0; background: url('/maka/lobby/btn_rand_bg.png') center / 100% 100% no-repeat; }
+.hud-preset-import { position: absolute; left: 578.04226px; top: calc(50% - 364.976645px); width: 139.202103px; height: 39.088299px; display: grid; place-items: center; padding: 0; border: 0; background: none; }
 /* The requested original add_1 replaces star_btn in its 49-high control area;
-   keep the diamond's 84:85 ratio and the brown native background. */
+   keep the diamond's 84:85 ratio without a background behind it. */
 .hud-preset-import img { position: absolute; width: auto; height: 49px; pointer-events: none; }
 .hud-preset-preview-content { position: absolute; left: 42px; right: 24px; top: calc(50% - 289px); bottom: 20px; overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; overflow-anchor: none; }
 .hud-preset-preview .hud-model-list { overflow: visible; }

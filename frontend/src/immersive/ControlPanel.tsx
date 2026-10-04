@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { createMemoryRouter, NavLink, RouterProvider } from 'react-router-dom'
+import { createMemoryRouter, NavLink, RouterProvider, useLocation } from 'react-router-dom'
 import { Toaster } from '@/components/ui/sonner'
 import { pendingCalibration, saveCalibration } from './calibrationPersistence'
 import type { OverlayConfig } from '@/types'
@@ -11,6 +11,7 @@ import { MenuFooter } from './MenuFooter'
 import { useViewport } from './nativeAvatar'
 import { LocalModels } from './LocalModels'
 import { MenuContent } from './MenuContent'
+import { menuMotionStyle } from './menuMotion'
 import './menuLocal.css'
 
 type PanelContext = { frame: ImmersiveFrame | null; cfg: OverlayConfig; close: () => void; scale: number }
@@ -19,13 +20,14 @@ const usePanel = () => useContext(Context)!
 function ModelsRoute() { return <LocalModels scale={usePanel().scale} /> }
 function Layout() {
   const { close, scale } = usePanel()
+  const models = useLocation().pathname === '/'
   return <>
     <header className="hud-drawer-header">
       <img className="maka-menu-title-bg" src="/maka/lobby/img_return1_bg.png" alt="" />
       <span className="hud-brand">MAKA INGAME</span>
       <button className="maka-menu-back" data-native-press-scale type="button" onClick={close} aria-label="关闭牌桌菜单" title="返回牌桌 · Esc"><span className="maka-control-art"><img src="/maka/lobby/img_return1.png" alt="" /></span></button>
     </header>
-    <div className="maka-menu-panel">
+    <div className="maka-menu-panel" data-menu-layout={models ? 'models' : 'calibration'} style={menuMotionStyle}>
     <nav className="hud-drawer-tabs" aria-label="菜单页面">{[['/', '模型'], ['/calibration', '提示与校准']].map(([to, label]) => <NavLink key={to} to={to} end>{({isActive}) => <><img src={`/maka/character/${isActive ? 'tab_bright2' : 'tab_gray3'}.png`} alt="" /><span>{label}</span></>}</NavLink>)}</nav>
     <div className="maka-menu-body">
       <NativeSprite src="/maka/character/bg_bound.png" border={[65, 72, 63, 67]} pixelScale={scale} fill={{ color: 'rgba(0, 0, 0, 0.6666666865)', inset: 17.5 }} />

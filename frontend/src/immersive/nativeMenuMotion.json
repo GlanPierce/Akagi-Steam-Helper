@@ -1,203 +1,22 @@
 {
-  "source": "$0qqs7$z0kyy08ol$h_779kibqvljddfjxtykkmc_657e2ad311900e2bf5a2.majset",
-  "sha256": "f6cef1e04cfcbf70eb47662f48fe42525393d44732dd2cbf4b176774a01f8d06",
-  "clips": {
-    "in": {
-      "name": "UI_LiaosheSelect_in",
-      "durationMs": 333.333343,
-      "points": [
-        {
-          "offset": 0.0,
-          "opacity": 0,
-          "x": 173.0
-        },
-        {
-          "offset": 0.05,
-          "opacity": 0.007966,
-          "x": 172.680924
-        },
-        {
-          "offset": 0.1,
-          "opacity": 0.030765,
-          "x": 169.83465
-        },
-        {
-          "offset": 0.15,
-          "opacity": 0.066748,
-          "x": 164.736221
-        },
-        {
-          "offset": 0.2,
-          "opacity": 0.114269,
-          "x": 157.660681
-        },
-        {
-          "offset": 0.25,
-          "opacity": 0.171678,
-          "x": 148.883072
-        },
-        {
-          "offset": 0.3,
-          "opacity": 0.237328,
-          "x": 138.678438
-        },
-        {
-          "offset": 0.35,
-          "opacity": 0.30957,
-          "x": 127.321821
-        },
-        {
-          "offset": 0.4,
-          "opacity": 0.386756,
-          "x": 115.088266
-        },
-        {
-          "offset": 0.45,
-          "opacity": 0.467239,
-          "x": 102.252813
-        },
-        {
-          "offset": 0.5,
-          "opacity": 0.54937,
-          "x": 89.090508
-        },
-        {
-          "offset": 0.55,
-          "opacity": 0.631501,
-          "x": 75.876393
-        },
-        {
-          "offset": 0.6,
-          "opacity": 0.711983,
-          "x": 62.88551
-        },
-        {
-          "offset": 0.65,
-          "opacity": 0.78917,
-          "x": 50.392904
-        },
-        {
-          "offset": 0.7,
-          "opacity": 0.861412,
-          "x": 38.673617
-        },
-        {
-          "offset": 0.75,
-          "opacity": 0.927062,
-          "x": 28.002692
-        },
-        {
-          "offset": 0.8,
-          "opacity": 0.984471,
-          "x": 18.655172
-        },
-        {
-          "offset": 0.85,
-          "opacity": 1,
-          "x": 10.9061
-        },
-        {
-          "offset": 0.9,
-          "opacity": 1,
-          "x": 5.03052
-        },
-        {
-          "offset": 0.95,
-          "opacity": 1,
-          "x": 1.303475
-        },
-        {
-          "offset": 1.0,
-          "opacity": 1,
-          "x": 0.0
-        }
-      ]
-    },
-    "out": {
-      "name": "UI_LiaosheSelect_out",
-      "durationMs": 250.0,
-      "points": [
-        {
-          "offset": 0.0,
-          "opacity": 1,
-          "x": 0.0
-        },
-        {
-          "offset": 0.06666666666666667,
-          "opacity": 0.972,
-          "x": 1.821926
-        },
-        {
-          "offset": 0.13333333333333333,
-          "opacity": 0.896,
-          "x": 6.948741
-        },
-        {
-          "offset": 0.2,
-          "opacity": 0.784,
-          "x": 14.872
-        },
-        {
-          "offset": 0.26666666666666666,
-          "opacity": 0.648,
-          "x": 25.083259
-        },
-        {
-          "offset": 0.3333333333333333,
-          "opacity": 0.5,
-          "x": 37.074074
-        },
-        {
-          "offset": 0.4,
-          "opacity": 0.352,
-          "x": 50.336
-        },
-        {
-          "offset": 0.4666666666666667,
-          "opacity": 0.216,
-          "x": 64.360593
-        },
-        {
-          "offset": 0.5333333333333333,
-          "opacity": 0.104,
-          "x": 78.639407
-        },
-        {
-          "offset": 0.6,
-          "opacity": 0.028,
-          "x": 92.664
-        },
-        {
-          "offset": 0.6666666666666666,
-          "opacity": 0,
-          "x": 105.925926
-        },
-        {
-          "offset": 0.7333333333333333,
-          "opacity": 0,
-          "x": 117.916741
-        },
-        {
-          "offset": 0.8,
-          "opacity": 0,
-          "x": 128.128
-        },
-        {
-          "offset": 0.8666666666666667,
-          "opacity": 0,
-          "x": 136.051259
-        },
-        {
-          "offset": 0.9333333333333333,
-          "opacity": 0,
-          "x": 141.178074
-        },
-        {
-          "offset": 1.0,
-          "opacity": 0,
-          "x": 143.0
-        }
-      ]
-    }
-  }
+  "source": "Steam UI_LiaosheSelect Lua runtime + UIBase.AnimAlphaIn/Out + DOTweenSettings (2026-10-04)",
+  "sourceSha256": {
+    "ui_liaosheselect.lua": "0659291dde65ae2a2fedd821f23944964682c2a410be30c992c1161a55cb035b",
+    "uibase.lua": "b38ea36762d524df55ef39ad9c3037124d914dd2a2abad2130935d795504214c",
+    "ui_pagedeco.lua": "6846ca51f7070a0df31636fc3ce8307c03b0d49f5d9c77249ab8a3a399d5eb91"
+  },
+  "note": "The prefab Animator is disabled. Its legacy AnimationClips are not the runtime transitions. Offsets below use CSS coordinates in the 1920x1080 canvas.",
+  "ease": "cubic-bezier(0.3333333333, 0.6666666667, 0.6666666667, 1)",
+  "easeName": "OutQuad",
+  "menu": {
+    "in": { "durationMs": 200 },
+    "out": { "durationMs": 150 },
+    "headerOffsetY": -30,
+    "panelOffsetX": 30
+  },
+  "page": {
+    "toDecoration": { "outMs": 150, "inMs": 150 },
+    "fromDecoration": { "outMs": 200, "inMs": 200 }
+  },
+  "frame": { "durationMs": 200, "nativeCollapsedWidth": 766, "nativeExpandedWidth": 1581 }
 }

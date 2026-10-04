@@ -19,7 +19,7 @@ python scripts/build_steam_icons.py
 
 脚本固定了已核对的资源包名，客户端更新后若名称变化，需要更新映射。它不写入游戏目录；输出哈希与切片元数据记录在本机 `frontend/public/maka/provenance.json`。不要把提取结果提交到公开仓库。
 
-控件几何和菜单动画测量结果已随源码保存；重新测量可用 `scripts/extract_steam_controls.py`（另需 NumPy、SciPy）和 `scripts/extract_steam_menu_motion.py`，参数见 `--help`。
+控件几何可用 `scripts/extract_steam_controls.py` 重新测量（另需 NumPy、SciPy）。当前菜单动画来自游戏运行时 Lua/DOTween，参数及源哈希保存在 `frontend/src/immersive/nativeMenuMotion.json`。`scripts/extract_steam_menu_motion.py` 只导出已禁用的旧 AnimationClip，用于历史诊断，必须指定输出目录；它不能生成当前菜单动画。参数见 `--help`。
 
 ## 编译
 

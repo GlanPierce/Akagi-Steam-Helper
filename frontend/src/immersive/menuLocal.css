@@ -108,19 +108,18 @@
 
 .hud-menu-page:has(.hud-calibration-page, .hud-local-models), .hud-drawer-content > div:has(.hud-calibration-page, .hud-local-models) { height: 100%; min-height: 100%; }
 
-/* Keep the top return banner on its own vertical track. The extracted heads
-   track moves the main panel horizontally; page changes reuse that track. */
-.maka-menu-transition { position: absolute; inset: 0; animation: maka-menu-fade-in var(--menu-enter-time) linear both; }
-.maka-menu-transition .hud-drawer-header { animation: maka-menu-header-in var(--menu-enter-time) ease-out both; }
-.maka-menu-transition .maka-menu-panel { animation: maka-menu-slide-in var(--menu-enter-time) linear both; }
-.maka-menu-transition.is-closing { animation: maka-menu-fade-out var(--menu-exit-time) linear both; pointer-events: none; }
-.maka-menu-transition.is-closing .hud-drawer-header { animation: maka-menu-header-out var(--menu-exit-time) ease-in both; }
-.maka-menu-transition.is-closing .maka-menu-panel { animation: maka-menu-slide-out var(--menu-exit-time) linear both; }
+/* The current game runs scripted DOTween tracks, not its disabled Animator.
+   Menu entry/exit animate top and heads; tab changes fade only page contents. */
+.maka-menu-transition { position: absolute; inset: 0; }
+.maka-menu-transition .hud-drawer-header { animation: maka-menu-header-in var(--menu-enter-time) var(--menu-ease) both; }
+.maka-menu-transition .maka-menu-panel { animation: maka-menu-panel-in var(--menu-enter-time) var(--menu-ease) both; }
+.maka-menu-transition.is-closing { pointer-events: none; }
+.maka-menu-transition.is-closing .hud-drawer-header { animation: maka-menu-header-out var(--menu-exit-time) var(--menu-ease) both; }
+.maka-menu-transition.is-closing .maka-menu-panel { animation: maka-menu-panel-out var(--menu-exit-time) var(--menu-ease) both; }
 .maka-menu-transition.is-closing * { pointer-events: none; }
-.hud-menu-page[data-menu-phase=in] { animation: maka-menu-page-in var(--menu-enter-time) linear both; }
-.hud-menu-page[data-menu-phase=out] { animation: maka-menu-page-out var(--menu-exit-time) linear both; }
-@keyframes maka-menu-header-in { from { translate: 0 -154px; } to { translate: 0 0; } }
-@keyframes maka-menu-header-out { from { translate: 0 0; } to { translate: 0 -154px; } }
+.hud-menu-page[data-menu-phase=in] { animation: maka-menu-page-in var(--page-enter-time) var(--menu-ease) both; }
+.hud-menu-page[data-menu-phase=out] { animation: maka-menu-page-out var(--page-exit-time) var(--menu-ease) both; }
 @media (prefers-reduced-motion: reduce) {
+  .maka-menu-panel { transition: none; }
   .maka-menu-transition, .maka-menu-transition .maka-menu-panel, .maka-menu-transition .hud-drawer-header, .hud-menu-page[data-menu-phase] { animation: none; }
 }

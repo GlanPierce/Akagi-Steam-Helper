@@ -1,8 +1,8 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useLocation, useOutlet } from 'react-router-dom'
-import { menuMotionDuration, menuMotionStyle } from './menuMotion'
+import { menuMotionStyle, pageMotionTiming } from './menuMotion'
 
-function PageContent({ children, phase, fillHeight }: { children: ReactNode; phase: string; fillHeight: boolean }) {
+function PageContent({ children, phase, timing, fillHeight }: { children: ReactNode; phase: string; timing: { outMs: number; inMs: number }; fillHeight: boolean }) {
   const reserve = useRef<HTMLDivElement>(null)
   const content = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
@@ -23,7 +23,8 @@ function PageContent({ children, phase, fillHeight }: { children: ReactNode; pha
     observer.observe(page)
     return () => observer.disconnect()
   }, [fillHeight])
-  return <div className="hud-drawer-content" style={menuMotionStyle} aria-hidden={phase === 'out'} inert={phase === 'out'}><div ref={reserve}><div ref={content} className="hud-menu-page" data-menu-phase={phase}>{children}</div></div></div>
+  const style = { ...menuMotionStyle, '--page-exit-time': `${timing.outMs}ms`, '--page-enter-time': `${timing.inMs}ms` } as CSSProperties
+  return <div className="hud-drawer-content" style={style} aria-hidden={phase === 'out'} inert={phase === 'out'}><div ref={reserve}><div ref={content} className="hud-menu-page" data-menu-phase={phase}>{children}</div></div></div>
 }
 
 export function MenuContent() {
@@ -33,21 +34,25 @@ export function MenuContent() {
   const shownPath = useRef(path)
   const [shown, setShown] = useState({ path, outlet })
   const [phase, setPhase] = useState('idle')
+  const [timing, setTiming] = useState(() => pageMotionTiming(path))
   useLayoutEffect(() => { latestOutlet.current = outlet })
   useLayoutEffect(() => {
     if (path === shownPath.current) { setPhase('idle'); return }
+    const nextTiming = pageMotionTiming(path)
+    setTiming(nextTiming)
+    let enterTimer: number | undefined
     const show = () => {
       shownPath.current = path
       setShown({ path, outlet: latestOutlet.current })
-      setPhase('in')
+      setPhase(nextTiming.inMs ? 'in' : 'idle')
+      if (nextTiming.inMs) enterTimer = window.setTimeout(() => setPhase('idle'), nextTiming.inMs)
     }
-    const duration = menuMotionDuration('out')
-    if (!duration) { show(); return }
+    if (!nextTiming.outMs) { show(); return }
     setPhase('out')
-    const timer = window.setTimeout(show, duration)
-    return () => window.clearTimeout(timer)
+    const exitTimer = window.setTimeout(show, nextTiming.outMs)
+    return () => { window.clearTimeout(exitTimer); window.clearTimeout(enterTimer) }
   }, [path])
   // The departing page retains its scroll until it leaves; the arriving page
-  // gets a new scrolling surface after the original exit clip finishes.
-  return <PageContent key={shown.path} phase={phase} fillHeight={shown.path === '/' || shown.path === '/calibration'}>{shown.outlet}</PageContent>
+  // gets a new scrolling surface after the native page fade finishes.
+  return <PageContent key={shown.path} phase={phase} timing={timing} fillHeight={shown.path === '/' || shown.path === '/calibration'}>{shown.outlet}</PageContent>
 }

@@ -1,4 +1,9 @@
-"""Export the original LiaosheSelect in/out streamed animation curves."""
+"""Inspect legacy LiaosheSelect clips; these are NOT the active menu motion.
+
+The current prefab's Animator is disabled. The menu uses Lua UIBase tweens;
+frontend nativeMenuMotion.json records the verified runtime parameters instead.
+Diagnostic output uses a legacy prefix so it cannot overwrite the live tracks.
+"""
 import argparse
 import hashlib
 import json
@@ -37,7 +42,7 @@ def export(bundles, output):
     UnityPy.config.FALLBACK_UNITY_VERSION = '2022.3.62f1'
     source = bundles / BUNDLE
     result = {'source': BUNDLE, 'sha256': hashlib.sha256(source.read_bytes()).hexdigest(), 'clips': {}}
-    css = ['/* Generated from original UI_LiaosheSelect_in/out at 60 Hz. */']
+    css = ['/* Disabled legacy UI_LiaosheSelect clips, for diagnostics only. */']
     for obj in UnityPy.load(str(source)).objects:
         if obj.type.name != 'AnimationClip':
             continue
@@ -57,7 +62,7 @@ def export(bundles, output):
             points.append({'offset': frame / frames, 'opacity': round(max(0, min(1, sample(curves[0], time))), 6), 'x': round(sample(curves[1], time) + 73, 6)})
         result['clips'][phase] = {'name': clip['m_Name'], 'durationMs': round(duration * 1000, 6), 'points': points}
         for kind in ('fade', 'slide', 'page'):
-            css.append(f'@keyframes maka-menu-{kind}-{phase} {{')
+            css.append(f'@keyframes legacy-menu-{kind}-{phase} {{')
             for point in points:
                 props = []
                 if kind in ('fade', 'page'):
@@ -67,8 +72,8 @@ def export(bundles, output):
                 css.append(f"  {point['offset'] * 100:.6f}% {{ {'; '.join(props)}; }}")
             css.append('}')
     output.mkdir(parents=True, exist_ok=True)
-    (output / 'nativeMenuMotion.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
-    (output / 'nativeMenuMotion.css').write_text('\n'.join(css) + '\n', encoding='utf-8')
+    (output / 'legacyMenuMotion.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+    (output / 'legacyMenuMotion.css').write_text('\n'.join(css) + '\n', encoding='utf-8')
     print({phase: clip['durationMs'] for phase, clip in result['clips'].items()})
 
 
@@ -76,7 +81,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--bundles', type=Path, required=True)
     parser.add_argument('--unitypy-dir', type=Path, required=True)
-    parser.add_argument('--output', type=Path, default=Path('frontend/src/immersive'))
+    parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     sys.path.insert(0, str(args.unitypy_dir.resolve()))
     with warnings.catch_warnings():

@@ -20,7 +20,7 @@ it('finishes the return-button exit animation before releasing the native menu w
   fireEvent.click(screen.getByRole('button', {name:'返回牌桌'}))
   expect(view.container.querySelector('.maka-menu-transition.is-closing')).toBeTruthy()
   expect(command).not.toHaveBeenCalledWith('set_immersive_panel', {open:false})
-  act(() => vi.advanceTimersByTime(249))
+  act(() => vi.advanceTimersByTime(149))
   expect(screen.getByText('返回牌桌')).toBeTruthy()
   expect(command).not.toHaveBeenCalledWith('set_immersive_panel', {open:false})
   act(() => vi.advanceTimersByTime(1))

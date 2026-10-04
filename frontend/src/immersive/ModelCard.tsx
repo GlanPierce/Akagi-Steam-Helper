@@ -3,15 +3,15 @@ import type { BotInfo } from '@/types'
 import { cardName, modelLabel, modeName, portrait, type ModelMode } from './modelPresets'
 import { useModelImportStore } from './modelImportStore'
 
-export function ModelCard({ bot, mode, selected, assigned, favorite, disabled, onSelect, onFavorite }: {
-  bot: BotInfo; mode: ModelMode; selected: boolean; assigned: boolean; favorite: boolean
+export function ModelCard({ bot, mode, group, selected, assigned, favorite, disabled, onSelect, onFavorite }: {
+  bot: BotInfo; mode: ModelMode; group: 'favorites' | 'all'; selected: boolean; assigned: boolean; favorite: boolean
   disabled: boolean; onSelect: () => void; onFavorite: () => void
 }) {
   const ready = isNativeBot(bot.name) || (bot.has_pyproject && bot.env_ready)
   const label = modelLabel(bot)
   return <div className="hud-model-choice" data-active={assigned} data-selected={selected}>
     <label className="hud-model-card" title={label}>
-      <input type="radio" name={`model-${mode}`} checked={selected} aria-checked={selected} readOnly disabled={disabled || !ready} aria-label={`为${modeName(mode)}指定 ${label}`} onClick={onSelect} />
+      <input type="radio" name={`model-${mode}-${group}`} checked={selected} aria-checked={selected} readOnly disabled={disabled || !ready} aria-label={`为${modeName(mode)}指定 ${label}`} onClick={onSelect} />
       <img className="hud-model-glow" src="/maka/dorm/sushe_click_effect.png" alt="" />
       <span className="hud-model-portrait" aria-hidden="true"><img src={portrait(bot.name)} alt="" /></span>
       <img className="hud-model-outline" src="/maka/dorm/sushe_card_normal_outline.png" alt="" />
