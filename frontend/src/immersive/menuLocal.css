@@ -70,7 +70,7 @@
 .hud-native-option { border: 0 solid transparent; border-image: url('/maka/character/bf_popout.png') 18 18 19 17 fill / 18px; }
 .hud-calibration-page .hud-settings-grid { gap: 18px 28px; margin: 16px 0 0; }
 .hud-calibration-page .hud-settings-grid > :is(label, .hud-calibration-option) { display: grid; align-items: center; grid-template-columns: 166px minmax(0, 1fr); gap: 24px; min-height: 100px; padding: 18px 24px; }
-.hud-option-name { position: relative; align-self: stretch; display: flex; align-items: center; color: #d5ad6f; font: 31px/1 'Maka Brush', sans-serif; white-space: nowrap; }
+.hud-option-name { position: relative; align-self: stretch; display: flex; align-items: center; justify-content: center; text-align: center; color: #d5ad6f; font: 31px/1 'Maka Brush', sans-serif; white-space: nowrap; }
 .hud-option-name::after { content: ''; position: absolute; right: -12px; inset-block: -7px; width: 3px; background: url('/maka/character/line.png') center / 100% 100% no-repeat; }
 .hud-calibration-page { display: flex; flex-direction: column; min-height: 100%; }
 .hud-calibration-page .hud-settings-actions { justify-content: flex-end; margin-top: auto; padding-top: 12px; }
