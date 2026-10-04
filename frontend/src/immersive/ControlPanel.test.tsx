@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
 import type { AppConfig, BotInfo } from '@/types'
 import { useBotStore } from '@/stores/botStore'
@@ -6,6 +6,7 @@ import { useConfigStore } from '@/stores/configStore'
 import { useGameStore } from '@/stores/gameStore'
 import { useUiPrefsStore } from '@/stores/uiPrefsStore'
 import { useModelImportStore } from './modelImportStore'
+import { useModelPresetStore } from './modelPresetStore'
 import { ControlPanel } from './ControlPanel'
 import { game } from './fixtures'
 
@@ -49,10 +50,12 @@ function mount() {
 beforeEach(() => {
   invoke.mockReset()
   openFile.mockReset()
+  useModelPresetStore.setState({ error: '' })
   useModelImportStore.setState({ zipPath: '', name: '', busy: false, selecting: false, progress: '', error: '', message: '', warning: '' })
-  invoke.mockImplementation((command: string) => {
+  invoke.mockImplementation((command: string, args?: { name: string }) => {
     if (command === 'list_bots') return Promise.resolve(bots)
     if (command === 'get_config') return Promise.resolve(config)
+    if (command === 'set_model_preset') return Promise.resolve({ ...config.bot, active_4p: args!.name })
     return Promise.resolve(undefined)
   })
   useBotStore.setState({ list: [], status: { state: 'idle' } })
@@ -67,6 +70,59 @@ it('opens models by default and keeps only models and guidance', () => {
   expect(screen.getByRole('heading', { name: '本地模型' })).toBeTruthy()
   expect(screen.queryByRole('link', { name: '对局复盘' })).toBeNull()
   expect(screen.queryByRole('link', { name: '助手设置' })).toBeNull()
+})
+
+it('uses numbered presets, two native mode rows and a plus icon for importing', async () => {
+  mount()
+  await screen.findByRole('radio', { name: '为四人局指定 Mortal' })
+  expect(screen.getAllByRole('tab')).toHaveLength(10)
+  expect(screen.getByRole('tab', { name: '方案 1' }).getAttribute('aria-selected')).toBe('true')
+  expect(screen.getByRole('button', { name: '四人东/南' }).getAttribute('aria-pressed')).toBe('true')
+  expect(screen.getByRole('button', { name: '三人东/南' }).getAttribute('aria-pressed')).toBe('false')
+  const plus = screen.getByRole('button', { name: '导入模型' })
+  expect(plus.textContent).toBe('')
+  expect(plus.querySelector('img')?.getAttribute('src')).toBe('/maka/lobby/add_1.png')
+  expect(screen.getByRole('button', { name: '使用中' }).hasAttribute('disabled')).toBe(true)
+})
+
+it('saves an inactive preset without applying it and uses its pair only on 使用', async () => {
+  mount()
+  await screen.findByRole('radio', { name: '为四人局指定 Mortal' })
+  fireEvent.click(screen.getByRole('tab', { name: '方案 2' }))
+  const assigned = Array.from({ length: 10 }, (_, index) => ({ name: String(index + 1), model_4p: index === 1 ? 'mortal' : 'akagi-native', model_3p: 'akagi-native3p' }))
+  const saved = { ...config.bot, active_model_preset: 0, model_presets: assigned }
+  invoke.mockResolvedValueOnce(saved)
+  const card = screen.getByRole('radio', { name: '为四人局指定 Mortal' })
+  fireEvent.click(card)
+  expect(invoke).not.toHaveBeenCalledWith('set_model_preset', expect.anything())
+  fireEvent.click(card)
+  await waitFor(() => expect(invoke).toHaveBeenCalledWith('set_model_preset', { index: 1, mode: '4p', name: 'mortal' }))
+  await waitFor(() => expect(useModelImportStore.getState().selecting).toBe(false))
+  expect(useConfigStore.getState().config?.bot.active_4p).toBe('akagi-native')
+  expect(screen.getByRole('tab', { name: '方案 1' }).getAttribute('data-active')).toBe('true')
+  invoke.mockResolvedValueOnce({ ...saved, active_model_preset: 1, active_4p: 'mortal' })
+  fireEvent.click(screen.getByRole('button', { name: '使用' }))
+  await waitFor(() => expect(invoke).toHaveBeenCalledWith('activate_model_preset', { index: 1 }))
+  await waitFor(() => expect(screen.getByRole('tab', { name: '方案 2' }).getAttribute('data-active')).toBe('true'))
+  expect(useConfigStore.getState().config?.bot.active_3p).toBe('akagi-native3p')
+})
+
+it('autosaves a renamed preset and preserves other config changes during a model operation', async () => {
+  mount()
+  await screen.findByRole('radio', { name: '为四人局指定 Mortal' })
+  fireEvent.click(screen.getByRole('button', { name: '重命名方案' }))
+  const name = screen.getByRole('textbox', { name: '方案名称' })
+  fireEvent.change(name, { target: { value: '练习' } })
+  const presets = Array.from({ length: 10 }, (_, i) => ({ name: i ? String(i + 1) : '练习', model_4p: 'akagi-native', model_3p: 'akagi-native3p' }))
+  let finish!: (bot: AppConfig['bot']) => void
+  invoke.mockReturnValueOnce(new Promise<AppConfig['bot']>(resolve => { finish = resolve }))
+  fireEvent.keyDown(name, { key: 'Enter' })
+  useConfigStore.setState({ config: { ...config, overlay: { ...config.overlay, opacity: 0.6 } } })
+  finish({ ...config.bot, model_presets: presets, active_model_preset: 0 })
+  await waitFor(() => expect(invoke).toHaveBeenCalledWith('rename_model_preset', { index: 0, name: '练习' }))
+  await waitFor(() => expect(screen.getByRole('tab', { name: '方案 练习' })).toBeTruthy())
+  expect(useConfigStore.getState().config?.overlay.opacity).toBe(0.6)
+  expect(screen.queryByRole('button', { name: '保存' })).toBeNull()
 })
 
 it('autosaves calibration without duplicate feature switches and preserves other preferences', async () => {
@@ -87,11 +143,28 @@ it('previews a model on the first click and only activates it on the second clic
   fireEvent.click(activate)
   expect(activate.getAttribute('aria-checked')).toBe('true')
   expect(useConfigStore.getState().config?.bot.active_4p).toBe('akagi-native')
-  expect(invoke.mock.calls.some(([command]) => command === 'set_active_bot')).toBe(false)
+  expect(invoke.mock.calls.some(([command]) => command === 'set_model_preset')).toBe(false)
   fireEvent.click(activate)
-  await waitFor(() => expect(invoke).toHaveBeenCalledWith('set_active_bot', { mode: '4p', name: 'mortal' }))
-  await waitFor(() => expect(screen.getByText('Mortal').closest('[data-active]')?.getAttribute('data-active')).toBe('true'))
+  await waitFor(() => expect(invoke).toHaveBeenCalledWith('set_model_preset', { index: 0, mode: '4p', name: 'mortal' }))
+  await waitFor(() => expect(activate.closest('[data-active]')?.getAttribute('data-active')).toBe('true'))
   expect(useConfigStore.getState().config?.bot.active_4p).toBe('mortal')
+})
+
+it('invalidates an old preview after an external assignment change without affecting favorites', async () => {
+  const replacement: BotInfo = { name: 'replacement', dir: '', has_pyproject: true, env_ready: true }
+  invoke.mockImplementation(command => Promise.resolve(command === 'list_bots' ? [...bots, replacement] : config))
+  mount()
+  const mortal = await screen.findByRole('radio', { name: '为四人局指定 Mortal' })
+  fireEvent.click(mortal)
+  fireEvent.click(screen.getByRole('button', { name: '收藏 Mortal' }))
+  act(() => useConfigStore.setState({ config: { ...config, bot: { ...config.bot, active_4p: 'replacement' } } }))
+  expect(screen.getByRole('radio', { name: '为四人局指定 replacement' }).getAttribute('aria-checked')).toBe('true')
+  expect(screen.getByRole('radio', { name: '为四人局指定 Mortal' }).getAttribute('aria-checked')).toBe('false')
+  expect(useUiPrefsStore.getState().favoriteModels).toEqual(['mortal'])
+  fireEvent.click(screen.getByRole('radio', { name: '为四人局指定 Mortal' }))
+  expect(invoke.mock.calls.some(([name]) => name === 'set_model_preset')).toBe(false)
+  act(() => useConfigStore.setState({ config }))
+  expect(screen.getByRole('radio', { name: '为四人局指定 内置四人模型' }).getAttribute('aria-checked')).toBe('true')
 })
 
 it('keeps built-in models selectable without a Python environment', async () => {
@@ -153,16 +226,17 @@ it('requires two clicks on the new card after changing the preview and keeps eac
   expect(builtin.getAttribute('aria-checked')).toBe('false')
   fireEvent.click(builtin)
   fireEvent.click(mortal)
-  expect(invoke.mock.calls.filter(([command]) => command === 'set_active_bot')).toHaveLength(0)
+  expect(invoke.mock.calls.filter(([command]) => command === 'set_model_preset')).toHaveLength(0)
   expect(mortal.getAttribute('aria-checked')).toBe('true')
   fireEvent.click(mortal)
   await waitFor(() => expect(useConfigStore.getState().config?.bot.active_4p).toBe('mortal'))
   fireEvent.click(mortal)
-  expect(invoke.mock.calls.filter(([command]) => command === 'set_active_bot')).toHaveLength(1)
+  expect(invoke.mock.calls.filter(([command]) => command === 'set_model_preset')).toHaveLength(1)
   fireEvent.click(builtin)
   fireEvent.click(builtin)
-  await waitFor(() => expect(invoke).toHaveBeenLastCalledWith('set_active_bot', { mode: '4p', name: 'akagi-native' }))
+  await waitFor(() => expect(invoke).toHaveBeenLastCalledWith('set_model_preset', { index: 0, mode: '4p', name: 'akagi-native' }))
   expect(useConfigStore.getState().config?.bot.active_3p).toBe('akagi-native3p')
+  fireEvent.click(screen.getByRole('button', { name: '三人东/南' }))
   expect(screen.getByRole('radio', { name: '为三人局指定 内置三人模型' }).getAttribute('aria-checked')).toBe('true')
 })
 
@@ -187,7 +261,7 @@ it('imports a picked ZIP, refreshes the list and leaves current model selection 
   fireEvent.click(screen.getByRole('button', { name: '开始导入' }))
   await waitFor(() => expect(invoke).toHaveBeenCalledWith('install_bot_from_zip', { zipPath: 'C:/models/local-pack.zip', name: undefined }))
   expect(await screen.findByRole('radio', { name: '为四人局指定 local-pack' })).toBeTruthy()
-  expect(invoke.mock.calls.some(([command]) => command === 'set_active_bot')).toBe(false)
+  expect(invoke.mock.calls.some(([command]) => command === 'set_model_preset')).toBe(false)
   expect(useConfigStore.getState().config?.bot.active_4p).toBe('akagi-native')
 })
 
@@ -216,11 +290,11 @@ it('keeps imported models with missing dependencies visible so their environment
 })
 
 it('keeps selection pending across menu reopen so activation and installation cannot overlap', async () => {
-  let finish!: () => void
+  let finish!: (bot: AppConfig['bot']) => void
   invoke.mockImplementation((command: string) => {
     if (command === 'list_bots') return Promise.resolve(bots)
     if (command === 'get_config') return Promise.resolve(config)
-    if (command === 'set_active_bot') return new Promise<void>(resolve => { finish = resolve })
+    if (command === 'set_model_preset') return new Promise<AppConfig['bot']>(resolve => { finish = resolve })
     return Promise.resolve(undefined)
   })
   const first = mount()
@@ -232,7 +306,7 @@ it('keeps selection pending across menu reopen so activation and installation ca
   expect((await screen.findByRole('radio', { name: '为四人局指定 Mortal' }) as HTMLButtonElement).disabled).toBe(true)
   fireEvent.click(screen.getByRole('button', { name: '导入模型' }))
   expect((screen.getByRole('button', { name: '选择文件' }) as HTMLButtonElement).disabled).toBe(true)
-  finish()
+  finish({ ...config.bot, active_4p: 'mortal' })
   await waitFor(() => expect(useModelImportStore.getState().selecting).toBe(false))
   expect(useConfigStore.getState().config?.bot.active_4p).toBe('mortal')
 })
@@ -252,15 +326,17 @@ it('keeps the existing model after a failed confirmation and lets the selected c
 
 it('only exposes an empty favorite star on the currently selected card', async () => {
   mount()
-  const mortal = await screen.findByRole('radio', { name: '为四人局指定 Mortal' })
+  await screen.findByRole('radio', { name: '为四人局指定 Mortal' })
+  fireEvent.click(screen.getByRole('button', { name: '三人东/南' }))
   const threePlayer = screen.getByRole('region', { name: '三人局模型' })
   expect(within(threePlayer).getAllByRole('radio')).toHaveLength(1)
   expect(within(threePlayer).getByRole('radio').getAttribute('aria-checked')).toBe('true')
   expect(within(threePlayer).getByRole('button', { name: '收藏 内置三人模型' }).querySelector('img')?.getAttribute('src')).toBe('/maka/dorm/sushe_card_normal_star_dark.png')
+  fireEvent.click(screen.getByRole('button', { name: '四人东/南' }))
   expect(screen.queryByRole('button', { name: '收藏 Mortal' })).toBeNull()
-  fireEvent.click(mortal)
+  fireEvent.click(screen.getByRole('radio', { name: '为四人局指定 Mortal' }))
   expect(screen.getByRole('button', { name: '收藏 Mortal' }).querySelector('img')?.getAttribute('src')).toBe('/maka/dorm/sushe_card_normal_star_dark.png')
-  expect(invoke.mock.calls.some(([command]) => command === 'set_active_bot')).toBe(false)
+  expect(invoke.mock.calls.some(([command]) => command === 'set_model_preset')).toBe(false)
   fireEvent.click(screen.getByRole('radio', { name: '为四人局指定 内置四人模型' }))
   expect(screen.queryByRole('button', { name: '收藏 Mortal' })).toBeNull()
   expect(useUiPrefsStore.getState().favoriteModels).toEqual([])
@@ -273,12 +349,13 @@ it('toggles a favorite without changing the preview or activated model and keeps
   fireEvent.click(star)
   const fourPlayer = screen.getByRole('region', { name: '四人局模型' })
   const favorites = within(fourPlayer).getByRole('group', { name: '收藏模型' })
-  const all = within(fourPlayer).getByRole('group', { name: '全部模型' })
+  const all = within(fourPlayer).getByRole('group', { name: '未收藏模型' })
   expect(within(favorites).getByRole('button', { name: '取消收藏 Mortal' }).getAttribute('aria-pressed')).toBe('true')
-  expect(within(all).getByRole('radio', { name: '为四人局指定 Mortal' }).getAttribute('aria-checked')).toBe('true')
+  expect(within(favorites).getByRole('radio', { name: '为四人局指定 Mortal' }).getAttribute('aria-checked')).toBe('true')
+  expect(within(all).queryByRole('radio', { name: '为四人局指定 Mortal' })).toBeNull()
   expect(within(favorites).getAllByRole('radio')).toHaveLength(1)
-  expect(within(all).getAllByRole('radio')).toHaveLength(2)
-  expect(invoke.mock.calls.some(([command]) => command === 'set_active_bot')).toBe(false)
+  expect(within(all).getAllByRole('radio')).toHaveLength(1)
+  expect(invoke.mock.calls.some(([command]) => command === 'set_model_preset')).toBe(false)
   expect(useConfigStore.getState().config?.bot.active_4p).toBe('akagi-native')
   view.unmount()
   mount()
@@ -294,25 +371,26 @@ it('toggles a favorite without changing the preview or activated model and keeps
 it('keeps an empty favorites row with its heading and separator in both modes', async () => {
   mount()
   for (const name of ['四人局模型', '三人局模型']) {
+    fireEvent.click(screen.getByRole('button', { name: name.startsWith('四') ? '四人东/南' : '三人东/南' }))
     const section = await screen.findByRole('region', { name })
     expect(within(section).getByRole('heading', { name: '已收藏' })).toBeTruthy()
     const favorites = within(section).getByRole('group', { name: '收藏模型' })
     expect(within(favorites).getByText('空空如也')).toBeTruthy()
     expect(within(section).getByRole('separator')).toBeTruthy()
-    expect(within(section).getByRole('group', { name: '全部模型' })).toBeTruthy()
+    expect(within(section).getByRole('group', { name: '未收藏模型' })).toBeTruthy()
   }
 })
 
-it('only highlights the clicked copy of a favorite and confirms it on a second click', async () => {
+it('renders a favorite once and confirms it on a second click', async () => {
   useUiPrefsStore.setState({ favoriteModels: ['mortal'] })
   mount()
   const fourPlayer = screen.getByRole('region', { name: '四人局模型' })
   const favorites = await within(fourPlayer).findByRole('group', { name: '收藏模型' })
-  const all = within(fourPlayer).getByRole('group', { name: '全部模型' })
+  const all = within(fourPlayer).getByRole('group', { name: '未收藏模型' })
   const card = within(favorites).getByRole('radio', { name: '为四人局指定 Mortal' })
   fireEvent.click(card)
   expect(card.getAttribute('aria-checked')).toBe('true')
-  expect(within(all).getByRole('radio', { name: '为四人局指定 Mortal' }).getAttribute('aria-checked')).toBe('false')
+  expect(within(all).queryByRole('radio', { name: '为四人局指定 Mortal' })).toBeNull()
   expect(useConfigStore.getState().config?.bot.active_4p).toBe('akagi-native')
   fireEvent.click(card)
   await waitFor(() => expect(useConfigStore.getState().config?.bot.active_4p).toBe('mortal'))

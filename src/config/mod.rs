@@ -4,6 +4,7 @@ mod capture;
 mod general;
 mod logging;
 mod merge;
+mod model_presets;
 mod network;
 mod overlay;
 mod platform;
@@ -17,6 +18,7 @@ pub use capture::{CaptureConfig, CaptureMode, ChromiumConfig, HttpCaptureConfig}
 pub use general::GeneralConfig;
 pub use logging::LoggingConfig;
 pub use merge::merge_into;
+pub use model_presets::{ModelPreset, MODEL_PRESET_COUNT};
 pub use network::{GithubMirrorMode, NetworkConfig};
 pub use overlay::{OverlayConfig, OverlayFeature, TOP_N_MAX, TOP_N_MIN};
 pub use platform::{Platform, PlatformConfig};
@@ -194,6 +196,7 @@ pub fn load_config(cli_path: Option<&Path>) -> (AppConfig, PathBuf) {
     };
     // Migrate legacy `[bot] active = "..."` into `active_4p` once.
     cfg.bot.migrate_legacy_active();
+    cfg.bot.normalize_presets();
     // Pre-existing configs (created before the first-run wizard landed)
     // shouldn't be hijacked into the wizard. Detect by presence of any
     // non-default field that the user must have written deliberately.

@@ -42,6 +42,7 @@
 
 pub mod capture_supervisor;
 pub mod commands;
+pub mod model_presets;
 pub mod immersive;
 pub mod immersive_contours;
 mod immersive_templates;

@@ -200,6 +200,8 @@ export const OVERLAY_TOP_N_MAX = 5
 export const OVERLAY_OPACITY_MIN = 0.3
 export const OVERLAY_OPACITY_MAX = 1.0
 
+export type ModelPreset = { name: string; model_4p: string; model_3p: string }
+
 export type AppConfig = {
   general: { first_run_completed: boolean; developer_mode: boolean }
   logging: { dir: string; level: string; all_level: string }
@@ -209,6 +211,8 @@ export type AppConfig = {
     enabled: boolean
     active_4p: string
     active_3p: string
+    active_model_preset?: number
+    model_presets?: ModelPreset[]
     auto_sync: boolean
     dir: string
     api: NativeApiConfig

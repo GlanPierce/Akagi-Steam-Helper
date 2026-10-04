@@ -1,0 +1,70 @@
+/* UI_LiaosheSelect/heads/page_deco. RectTransform anchors are translated
+   directly from the Steam prefab, in its 1920 x 1080 reference canvas. */
+.maka-menu-panel:has(.hud-preset-page) { left: auto; width: 1584px; }
+.maka-menu-body:has(.hud-preset-page) { padding: 0; }
+.hud-drawer-content:has(.hud-preset-page) { overflow: visible; }
+.hud-local-models.hud-preset-page { position: relative; display: block; height: 100%; padding: 0; }
+
+/* Scroll View: pivot (1,.5), left anchor, (49.425,4.779388), 258.1051 x 782.9471.
+   ContainerSaves uses 229 x 102 cells with 3.8 vertical spacing. */
+.hud-preset-tabs { position: absolute; left: -208.6801px; top: calc(50% - 396.25294px); width: 258.1051px; height: 782.9471px; display: flex; flex-direction: column; gap: 3.8px; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; }
+.hud-preset-tabs::-webkit-scrollbar { display: none; }
+.hud-preset-tab { position: relative; flex: 0 0 102px; width: 229px; height: 102px; border: 0; padding: 0; background: none; color: #f2c797; font: 36px/60px 'Maka Menu Text', sans-serif; }
+.hud-preset-tab-art { position: absolute; left: 20.83365px; top: 0; width: 238.4333px; height: 102px; }
+.hud-preset-tab-art[data-selected=true] { left: 22.28165px; width: 234.6365px; }
+.hud-preset-tab-name { position: absolute; left: 37.5484px; top: 21px; width: 179.3516px; height: 60px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-preset-tab[aria-selected=true] { color: #613422; }
+.hud-preset-check { position: absolute; left: 4.3px; top: 21px; width: 67px; height: 69px; pointer-events: none; }
+.hud-preset-tab:focus-visible { outline-offset: -6px; }
+
+/* btn_edit_name: right/.5 anchor (-1199.44995,351.71347), 643 x 64. */
+.hud-preset-name { position: absolute; left: calc(100% - 1520.94995px); top: calc(50% - 383.71347px); width: 643px; height: 64px; background: url('/maka/character/dress_up_group_name_bottom.png') center / 643px 64px no-repeat; }
+.hud-preset-name button, .hud-preset-name input { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; height: 64px; padding: 0 28px; border: 0; background: none; color: #f2c797; font: 36px/64px 'Maka Menu Text', sans-serif; text-align: center; }
+.hud-preset-name button span { max-width: 510px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-preset-name button img { flex: none; width: 34px; height: 35px; }
+
+/* ContainerEffect (680 x 570); Content offset 11, padding left8/top10,
+   slot0 666.3 x 119.2. Child positions are relative to slot0/bg. */
+.hud-preset-modes { position: absolute; left: calc(50% - 750.8px); top: calc(50% - 286.8px); width: 680px; height: 570px; padding: 10px 0 10px 19px; display: flex; flex-direction: column; gap: 11px; }
+.hud-preset-mode { position: relative; flex: 0 0 119.2px; width: 666.3px; height: 119.2px; padding: 0; border: 0; background: none; }
+.hud-preset-mode-bg { position: absolute; left: 16.795px; top: 4.6675px; width: 612.99px; height: 114.53px; }
+.hud-preset-mode-title { position: absolute; left: 28.63004px; top: 19.30252px; width: 148.7898px; height: 84.5px; display: flex; align-items: center; justify-content: center; white-space: nowrap; color: #b58c37; font: 31px/1 'Maka Brush', sans-serif; }
+.hud-preset-mode-line { position: absolute; left: 184.28004px; top: 16.40252px; width: 3px; height: 92.5px; }
+.hud-preset-mode-description { position: absolute; left: 203.59562px; top: 16.9325px; width: 304px; height: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; color: #b58c37; font: 31px/90px 'Maka Menu Text', sans-serif; }
+.hud-preset-mode-icon { position: absolute; left: 524.604916px; top: 14.37746px; width: 94.95px; height: 94.95px; object-fit: contain; }
+/* chosen is a child of bg: include bg's (-9.86,-2.3325) anchored offset. */
+.hud-preset-mode-selected { position: absolute; left: 8.845px; top: -3.6125px; width: 652.47px; height: 132.13px; pointer-events: none; }
+.hud-preset-mode > span, .hud-preset-mode > img { pointer-events: none; }
+
+/* btn_use: lower/.5 anchor (-406.7,99.8), brush48, #613422. */
+.hud-drawer .hud-local-button.hud-preset-use { position: absolute; left: calc(50% - 529.925px); bottom: 58.76px; width: 246.45px; height: 82.08px; }
+.hud-drawer .hud-local-button.hud-preset-use[data-using=true] { background-image: url('/maka/dorm/btn_gray.png'); opacity: 1; }
+
+/* PagePreview: stretch Y, anchor X=.5, (343.5192566,7.345398),
+   sizeDelta (764.328613,-108.808197). Native sliced bf_popout. */
+.hud-preset-preview { position: absolute; left: calc(50% - 38.64505px); top: 47.0587px; bottom: 61.7495px; width: 764.328613px; }
+.hud-preset-preview-title { position: absolute; left: 52.06429px; top: calc(50% - 380.6px); width: 437.48709px; height: 67.6px; padding: 0; margin: 0; display: flex; align-items: center; color: #e7ab5d; font: 38px/1 'Maka Brush', sans-serif; }
+.hud-preset-preview-line { position: absolute; left: 49.7943px; top: calc(50% - 309.36px); width: 667.44757px; height: 3.64px; }
+.hud-preset-import { position: absolute; left: 578.04226px; top: calc(50% - 364.976645px); width: 139.202103px; height: 39.088299px; display: grid; place-items: center; padding: 0; border: 0; background: url('/maka/lobby/btn_rand_bg.png') center / 100% 100% no-repeat; }
+/* The requested original add_1 replaces star_btn in its 49-high control area;
+   keep the diamond's 84:85 ratio and the brown native background. */
+.hud-preset-import img { position: absolute; width: auto; height: 49px; pointer-events: none; }
+.hud-preset-preview-content { position: absolute; left: 42px; right: 24px; top: calc(50% - 289px); bottom: 20px; overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; overflow-anchor: none; }
+.hud-preset-preview .hud-model-list { overflow: visible; }
+.hud-preset-preview .hud-model-favorites { min-height: 252px; }
+.hud-preset-preview .hud-model-divider { margin: 4px 0 12px; }
+.hud-preset-preview .hud-model-divider img { width: 566px; max-width: 100%; height: auto; margin-inline: auto; object-fit: contain; }
+.hud-preset-preview .hud-model-import { margin: 8px 8px 18px 0; padding: 18px; }
+.hud-preset-preview .hud-import-file { flex-wrap: wrap; }
+.hud-preset-page .hud-menu-footer { position: absolute; left: 70px; right: 40px; bottom: 8px; padding: 0; }
+.hud-preset-page .hud-menu-footer-actions { max-width: 660px; }
+.hud-preset-page .hud-local-status { font-size: 23px; line-height: 32px; }
+
+/* Original Unity ColorBlock: white normal, 245/255 hover, 200/255 press. */
+.hud-preset-tab-art, .hud-preset-name button, .hud-preset-mode, .hud-preset-import { transition: filter 100ms linear; }
+.hud-preset-tab:not(:disabled):hover .hud-preset-tab-art,
+.hud-preset-name button:not(:disabled):hover, .hud-preset-mode:hover,
+.hud-preset-import:hover { filter: brightness(.960784); }
+.hud-preset-tab:not(:disabled):active .hud-preset-tab-art,
+.hud-preset-name button:not(:disabled):active, .hud-preset-mode:active,
+.hud-preset-import:active { filter: brightness(.784314); }

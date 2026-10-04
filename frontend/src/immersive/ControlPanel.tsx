@@ -16,7 +16,7 @@ import './menuLocal.css'
 type PanelContext = { frame: ImmersiveFrame | null; cfg: OverlayConfig; close: () => void; scale: number }
 const Context = createContext<PanelContext | null>(null)
 const usePanel = () => useContext(Context)!
-function ModelsRoute() { return <LocalModels /> }
+function ModelsRoute() { return <LocalModels scale={usePanel().scale} /> }
 function Layout() {
   const { close, scale } = usePanel()
   return <>

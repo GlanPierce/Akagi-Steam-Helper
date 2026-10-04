@@ -201,6 +201,8 @@ pub struct BotConfig {
     /// Active bot for 3-player (sanma) games. Empty string ⇒ no bot
     /// configured for 3p (analysis-only mode in 3p matches).
     pub active_3p: String,
+    pub active_model_preset: usize,
+    pub model_presets: Vec<super::ModelPreset>,
     /// Legacy field, kept for one release for migration purposes. New code
     /// reads `active_4p` / `active_3p`. If the on-disk config has only
     /// `active` set, `active_4p` is populated from it during deserialise.
@@ -254,6 +256,8 @@ impl Default for BotConfig {
             // install, so they make sensible out-of-the-box defaults.
             active_4p: crate::bot::native::NATIVE_4P.to_string(),
             active_3p: crate::bot::native::NATIVE_3P.to_string(),
+            active_model_preset: 0,
+            model_presets: Vec::new(),
             active: String::new(),
             auto_sync: true,
             dir: "mjai_bot".to_string(),

@@ -50,8 +50,9 @@ WANTED = {
            'slidercomplete', 'scrollpoint', 'bf_close', 'button_gray', 'kuangbound', 'namebg', 'bg_func'},
     'replay': {'replaybox', 'expand_button', 'vline'},
     'character': {'bg_bound', 'bg_black', 'tab_bright2', 'tab_gray3', 'btn_bright', 'bf_popout',
-                  'mark_selected', 'mark_unselected', 'ScrollHandlerVertical', 'scrollBgVertical', 'bound_selected', 'line', 'noinfo'},
-    'lobby': {'star_slider', 'star_btn', 'btn_rand_bg', 'btn_small', 'img_return1', 'img_return1_bg'},
+                  'mark_selected', 'mark_unselected', 'ScrollHandlerVertical', 'scrollBgVertical', 'bound_selected', 'line', 'noinfo',
+                  'tab_gray', 'tab_bright', 'choose', 'dress_up_group_name_bottom', 'dress_up_change_name_button'},
+    'lobby': {'star_slider', 'star_btn', 'btn_rand_bg', 'btn_small', 'img_return1', 'img_return1_bg', 'mode_confirm', 'add_1'},
     'lobby_chs': {'using_1'},
     'dorm': {'btn_next', 'sushe_filte_button', 'btn_sort', 'btn_gray', 'skin_using',
              'sushe_card_normal_outline', 'sushe_click_effect', 'sushe_role_bg',
@@ -72,7 +73,9 @@ FONT_FILES = {
 # rectangle inside m_Rect; stretching the cropped PNG moves its corners and
 # makes the selected/unselected variants disagree. Restore only these menu
 # sprites, whose consumers use their original logical dimensions.
-RESTORE_RECT = {'sushe_card_normal_outline', 'tab_gray3', 'using_1', 'noinfo'}
+RESTORE_RECT = {'sushe_card_normal_outline', 'tab_gray3', 'using_1', 'noinfo',
+                'tab_gray', 'tab_bright', 'choose', 'dress_up_group_name_bottom',
+                'dress_up_change_name_button', 'mode_confirm', 'add_1'}
 
 def restore_sprite_rect(sprite, cropped):
     width, height = round(sprite.m_Rect.width), round(sprite.m_Rect.height)

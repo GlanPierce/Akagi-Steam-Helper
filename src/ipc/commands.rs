@@ -358,29 +358,13 @@ pub async fn set_active_bot(
     name: String,
     state: State<'_, AppState>,
 ) -> CmdResult<()> {
-    // Built-in native bots are always available (no venv); skip the registry
-    // + environment checks that only apply to Python `mjai_bot/*` bots.
-    if !name.is_empty() && !crate::bot::native::is_native(&name) {
-        let dir = state.config.read().await.bot.dir.clone();
-        let resolved = resolve_dir(Path::new(&dir));
-        let registry = BotRegistry::scan(&resolved).map_err(|e| format!("scan bots: {e:#}"))?;
-        let entry = registry
-            .find(&name)
-            .ok_or_else(|| format!("bot {name:?} not found"))?;
-        if !runtime::is_synced(&entry.dir) {
-            return Err(format!(
-                "Bot {name:?}'s Python environment isn't installed yet — install or sync it before setting it active."
-            ));
-        }
-    }
     {
         let mut cfg = state.config.write().await;
-        match mode.as_str() {
-            "4p" => cfg.bot.active_4p = name.clone(),
-            "3p" => cfg.bot.active_3p = name.clone(),
-            other => return Err(format!("unknown mode {other:?}; expected \"4p\" or \"3p\"")),
-        }
-        persist_config(&cfg, &state.config_path).map_err(|e| e.to_string())?;
+        super::model_presets::transact(&mut cfg, &state.config_path, |bot| {
+            super::model_presets::validate_choice(bot, &mode, &name)?;
+            bot.normalize_presets();
+            bot.set_preset_model(bot.active_model_preset, &mode, name.clone())
+        })?;
     }
     let label = if name.is_empty() {
         format!("{mode} bot cleared")
@@ -1740,7 +1724,7 @@ pub async fn native_api_checkout_result(
     .map_err(|e| format!("{e:#}"))
 }
 
-fn persist_config(config: &AppConfig, path: &Path) -> std::io::Result<()> {
+pub(super) fn persist_config(config: &AppConfig, path: &Path) -> std::io::Result<()> {
     if let Some(parent) = path.parent() {
         if !parent.as_os_str().is_empty() {
             std::fs::create_dir_all(parent)?;
@@ -1765,7 +1749,13 @@ fn persist_config(config: &AppConfig, path: &Path) -> std::io::Result<()> {
             toml::to_string_pretty(config).map_err(std::io::Error::other)?
         }
     };
-    std::fs::write(path, body)
+    use std::io::Write;
+    let parent = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
+    let mut staged = tempfile::NamedTempFile::new_in(parent)?;
+    staged.write_all(body.as_bytes())?;
+    staged.as_file().sync_all()?;
+    staged.persist(path).map_err(|e| e.error)?;
+    Ok(())
 }
 
 /// Pre-builds the handler list for `tauri::generate_handler!`. Keep in
@@ -1787,6 +1777,9 @@ macro_rules! ipc_handlers {
             $crate::ipc::commands::update_immersive_options,
             $crate::ipc::commands::list_bots,
             $crate::ipc::commands::set_active_bot,
+            $crate::ipc::model_presets::set_model_preset,
+            $crate::ipc::model_presets::activate_model_preset,
+            $crate::ipc::model_presets::rename_model_preset,
             $crate::ipc::commands::get_bot_settings,
             $crate::ipc::commands::update_bot_settings,
             $crate::ipc::commands::install_bot_from_github,
