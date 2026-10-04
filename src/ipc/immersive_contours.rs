@@ -13,6 +13,7 @@ pub struct VisualTarget {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct ContourRequest {
     pub key: String,
+    /// Tile targets cover the entire concealed hand, in visual order.
     pub targets: Vec<VisualTarget>,
 }
 #[derive(Clone, Debug, Serialize)]
@@ -130,10 +131,22 @@ pub fn detect(
             })
             .collect();
         pieces.sort_by_key(|c| c.x);
+        // A call removes tiles from the protocol before the game's meld
+        // animation removes them from the visible row. Check the next physical
+        // slot separately: a connected badge must not hide an extra tile, and
+        // a prefix of the old hand must never get the new discard indices.
+        let tail = trailing_tile_bounds(tiles.last().unwrap());
+        let tail_clear = !components(
+            pixels,
+            width,
+            region(tail[0], tail[1], tail[2], tail[3], unit, width, height),
+        )
+        .iter()
+        .any(|c| is_slot_tile_body(c, unit));
         // Full-width Maka labels can join neighbouring tile components in the
         // composed capture. Retry inside physical tile slots; every slot must
         // still contain a real lower tile body, never just a floating label.
-        if pieces.len() != tiles.len() {
+        if tail_clear && pieces.len() < tiles.len() {
             pieces = tiles
                 .iter()
                 .enumerate()
@@ -154,25 +167,14 @@ pub fn detect(
                         region(left, 7., right, 9., unit, width, height),
                     )
                     .into_iter()
-                    .filter(|c| {
-                        let w = c.w as f64 / unit;
-                        let h = c.h as f64 / unit;
-                        (0.48..=0.98).contains(&w)
-                            && (0.65..=1.95).contains(&h)
-                            && (c.y + c.h) as f64 / unit > 8.25
-                            && c.points
-                                .iter()
-                                .filter(|(_, y)| *y as f64 / unit > 8.1)
-                                .count()
-                                > c.w * 5
-                            && c.points.len() > c.w * c.h / 3
-                    })
+                    .filter(|c| is_slot_tile_body(c, unit))
                     .max_by_key(|c| c.points.len())
                 })
                 .collect();
         }
         // Never shift probabilities onto the next tile during sorting / dealing animations.
-        if pieces.len() == tiles.len()
+        if tail_clear
+            && pieces.len() == tiles.len()
             && tiles
                 .iter()
                 .zip(&pieces)
@@ -247,7 +249,7 @@ pub fn capture_roi(width: usize, height: usize, request: &ContourRequest) -> Opt
             "tile" => Some([
                 (t.x - t.w / 2. - 0.25) * unit,
                 7. * unit,
-                (t.x + t.w / 2. + 0.5) * unit,
+                (t.x + t.w / 2. + 0.5).max(trailing_tile_bounds(t)[2]) * unit,
                 9. * unit,
             ]),
             "choice" => Some([
@@ -317,6 +319,26 @@ struct Component {
     w: usize,
     h: usize,
     points: Vec<(usize, usize)>,
+}
+
+fn trailing_tile_bounds(t: &VisualTarget) -> [f64; 4] {
+    // Isolate one adjacent slot so even joined gold badges cannot merge the
+    // extra tile into the expected last tile. The same ROI is captured above.
+    [t.x + t.w * 0.56, 7., t.x + t.w * 1.6, 9.]
+}
+
+fn is_slot_tile_body(c: &Component, unit: f64) -> bool {
+    let w = c.w as f64 / unit;
+    let h = c.h as f64 / unit;
+    (0.48..=0.98).contains(&w)
+        && (0.65..=1.95).contains(&h)
+        && (c.y + c.h) as f64 / unit > 8.25
+        && c.points
+            .iter()
+            .filter(|(_, y)| *y as f64 / unit > 8.1)
+            .count()
+            > c.w * 5
+        && c.points.len() > c.w * c.h / 3
 }
 
 fn tile_shell(target: &VisualTarget, c: &Component, unit: f64) -> Silhouette {

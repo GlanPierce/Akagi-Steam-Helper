@@ -154,6 +154,89 @@ fn target(id: &str, kind: &str, x: f64, y: f64, w: f64, h: f64) -> VisualTarget 
 }
 
 #[test]
+fn post_pon_hints_wait_for_the_called_tiles_to_leave_the_hand() {
+    // The protocol already removed the two consumed tiles, while the native
+    // pon animation still displays the old thirteen-tile row. A prefix of
+    // that row must not receive the new eleven-tile discard probabilities.
+    let original = fixture(
+        include_bytes!("fixtures/immersive/maka-clean-hand.bgra.gz"),
+        210,
+        906,
+        1370,
+        174,
+    );
+    let request = |count: usize| ContourRequest {
+        key: format!("post-call-{count}"),
+        targets: (0..count)
+            .map(|i| {
+                target(
+                    &format!("tile-{i}"),
+                    "tile",
+                    2.23125 + i as f64 * 0.790625,
+                    8.3625,
+                    0.762,
+                    1.19,
+                )
+            })
+            .collect(),
+    };
+    let keep_tiles = |count: usize| {
+        let mut pixels = original.clone();
+        let right = ((2.23125 + (count as f64 - 0.5) * 0.790625) * 120.) as usize;
+        for row in pixels.chunks_exact_mut(1920 * 4) {
+            for pixel in row[right * 4..].chunks_exact_mut(4) {
+                pixel.copy_from_slice(&[100, 55, 25, 255]);
+            }
+        }
+        pixels
+    };
+    for (old_count, new_count) in [(13, 11), (10, 8), (7, 5), (4, 2)] {
+        let before = keep_tiles(old_count);
+        let settled = keep_tiles(new_count);
+        let after_call = request(new_count);
+        for (width, height, scale) in [(960, 540, 0.5), (1920, 1080, 1.), (3840, 2160, 2.)] {
+            let before = transformed(&before, width, height, scale, 0., 0.);
+            let old_shapes = detect(&before, width, height, &request(old_count));
+            assert_eq!(old_shapes.shapes.len(), old_count);
+            for feedback in [false, true] {
+                let mut composed = before.clone();
+                if feedback {
+                    for shape in old_shapes.shapes.iter().skip(old_count - 3) {
+                        paint_maka(
+                            &mut composed,
+                            width,
+                            height,
+                            shape.bounds,
+                            [0.762, 1.19],
+                            true,
+                        );
+                    }
+                }
+                // The live capture copies only this region. A guard outside
+                // it would inspect stale pixels and miss the animation.
+                let roi = capture_roi(width, height, &after_call).unwrap();
+                let mut capture = vec![0; composed.len()];
+                for y in roi[1]..roi[3] {
+                    let a = (y * width + roi[0]) * 4;
+                    let b = (y * width + roi[2]) * 4;
+                    capture[a..b].copy_from_slice(&composed[a..b]);
+                }
+                assert!(
+                    detect(&capture, width, height, &after_call).shapes.is_empty(),
+                    "{old_count}->{new_count} at {width}, feedback={feedback}: old hand got new indices"
+                );
+            }
+            let settled = transformed(&settled, width, height, scale, 0., 0.);
+            assert_eq!(
+                detect(&settled, width, height, &after_call).shapes.len(),
+                new_count,
+                "{old_count}->{new_count} at {width}: hints must resume when the hand settles"
+            );
+        }
+    }
+}
+
+#[test]
 fn cropped_capture_preserves_real_control_and_lifted_tile_measurements() {
     for (original, targets) in [
         (
@@ -374,10 +457,15 @@ fn real_lifted_tile_stays_whole_despite_old_probability_label_and_stroke() {
         1080,
         &ContourRequest {
             key: "lift".into(),
-            targets: vec![target("tile-0", "tile", 2.23125, 8.3625, 0.762, 1.19)],
+            // The crop contains two tiles; like the live request, include the
+            // whole visible row even when only its first tile has a badge.
+            targets: vec![
+                target("tile-0", "tile", 2.23125, 8.3625, 0.762, 1.19),
+                target("tile-1", "tile", 3.021875, 8.3625, 0.762, 1.19),
+            ],
         },
     );
-    assert_eq!(result.shapes.len(), 1);
+    assert_eq!(result.shapes.len(), 2);
     let b = result.shapes[0].bounds.map(|v| v * 120.0);
     assert!((b[0] - 222.0).abs() <= 3.0, "left {b:?}");
     assert!(
